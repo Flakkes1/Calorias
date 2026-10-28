@@ -1,0 +1,29 @@
+CONTROLO DE CALORIAS (PWA)
+
+Conteúdo
+  index.html            a aplicação
+  manifest.webmanifest  nome, cores e ícones
+  sw.js                 modo offline
+  icons/                ícones
+
+1. Pôr online (grátis, precisa de HTTPS)
+  Opção A, Netlify Drop (a mais simples):
+    - Abra app.netlify.com/drop, arraste a pasta descompactada para a página.
+    - Recebe um endereço https://qualquer-nome.netlify.app
+  Opção B, GitHub Pages:
+    - Crie um repositório, envie estes ficheiros, e ative Settings > Pages.
+  Opção C, Cloudflare Pages: carregue a pasta em "Direct Upload".
+  Mantenha os ficheiros na mesma pasta (sem alterar os nomes).
+
+2. Instalar no telemóvel
+  Android (Chrome): abra o endereço, menu (três pontos) > "Instalar aplicação".
+  iPhone (Safari): abra o endereço, Partilhar > "Adicionar ao ecrã principal".
+
+3. Cópia de segurança
+  No fim da página, "Exportar dados" cria um ficheiro .json e "Importar dados" restaura-o.
+  Os registos ficam só no dispositivo; exporte de tempos a tempos.
+
+4. Atualizar a aplicação
+  Depois de alterar index.html, mude VERSAO em sw.js (por exemplo, calorias-v2) e volte a enviar os ficheiros.
+
+Nota: as pesquisas no Open Food Facts e no USDA precisam de internet.

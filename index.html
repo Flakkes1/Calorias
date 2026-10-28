@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Controlo de calorias</title>
+<meta name="theme-color" content="#1d4e89">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Calorias">
+<style>
+:root{--bg:#f3f6f9;--card:#fff;--ink:#14263d;--mut:#5d6b7c;--line:#d9e0e8;--blue:#1d4e89;--ok:#2f7d5b;--warn:#c4571a;--chip:#e6eef7}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1722;--card:#16222f;--ink:#e8eef5;--mut:#98a6b6;--line:#2a3a4c;--blue:#6aa6e8;--ok:#5fc596;--warn:#f08a54;--chip:#1f3147}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 "Segoe UI",system-ui,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:1.5rem;margin:0 0 16px}
+h2{font-size:1.05rem;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+input,select,button{font:inherit;color:inherit}
+input,select{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0}
+button{cursor:pointer;border:1px solid var(--blue);background:var(--blue);color:#fff;border-radius:6px;padding:8px 12px}
+button.ghost{background:transparent;color:var(--blue)}
+button.x{background:none;border:none;color:var(--mut);padding:2px 8px;font-size:1.1rem}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row>input[type=search]{flex:1}
+.top{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.big{font-size:2.2rem;font-weight:700;line-height:1}
+.bar{height:10px;background:var(--chip);border-radius:5px;overflow:hidden;margin:10px 0}
+.bar i{display:block;height:100%;background:var(--ok);width:0}
+.mac{display:flex;gap:16px;color:var(--mut);font-size:.9rem;flex-wrap:wrap}
+.meal{margin-top:14px}
+.meal h3{font-size:.95rem;margin:0 0 4px;display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:4px}
+.item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;gap:8px}
+.item small,.empty,.note{color:var(--mut)}
+.res{border-bottom:1px solid var(--line);padding:8px 0;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.src{font-size:.75rem;background:var(--chip);border-radius:4px;padding:1px 6px;margin-left:6px;white-space:nowrap}
+.note{font-size:.85rem;margin-top:10px}
+#sel{background:var(--chip);border-radius:8px;padding:10px;margin:10px 0;display:none}
+details{margin-top:12px}
+table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--line)}th:first-child,td:first-child{text-align:left}td.ok{color:var(--ok);font-weight:600}
+.bar.p i{background:var(--blue)}section.wk{margin-top:16px}
+.plan{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px}.pm{border:1px solid var(--line);border-radius:8px;padding:10px}.pm h3{font-size:.95rem;margin:0 0 6px}.pm ul{margin:0 0 8px;padding-left:18px}.pm button{padding:4px 8px;font-size:.85rem}
+summary{cursor:pointer;color:var(--blue)}
+details .row{margin-top:8px}
+main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));padding-top:max(20px,env(safe-area-inset-top));padding-bottom:max(60px,env(safe-area-inset-bottom))}
+button{min-height:40px}
+</style>
+</head>
+<body>
+<main>
+<h1>Controlo de calorias</h1>
+
+<div class="grid">
+<section aria-labelledby="h-dia">
+  <h2 id="h-dia">O meu dia</h2>
+  <div class="top">
+    <input type="date" id="data" aria-label="Data">
+    <label>Meta diária <input type="number" id="meta" min="500" step="50" style="width:90px"> kcal</label>
+    <label>Meta de proteína <input type="number" id="metap" min="0" step="5" style="width:80px"> g</label>
+  </div>
+  <div><span class="big" id="total">0</span> <span class="note">kcal consumidas · restam <b id="resta">0</b></span></div>
+  <div class="bar"><i id="barra"></i></div>
+  <div style="margin-top:14px"><span class="big" id="mp">0</span> <span class="note">g de proteína · faltam <b id="faltap">0</b> g</span></div>
+  <div class="bar p"><i id="barrap"></i></div>
+  <div class="mac"><span>Hidratos <b id="mh">0</b> g</span><span>Gordura <b id="mg">0</b> g</span><span id="sug"></span></div>
+  <div id="refeicoes"></div>
+</section>
+
+<section aria-labelledby="h-add">
+  <h2 id="h-add">Adicionar alimento</h2>
+  <form class="row" id="f-pesq">
+    <input type="search" id="q" placeholder="Ex.: bacalhau, iogurte, pão" aria-label="Pesquisar alimento">
+    <button>Pesquisar</button>
+  </form>
+  <div class="row note" style="margin-top:8px">
+    <label><input type="checkbox" id="s-loc" checked> Tabela local</label>
+    <label><input type="checkbox" id="s-off" checked> Open Food Facts</label>
+    <label><input type="checkbox" id="s-usda"> USDA</label>
+  </div>
+  <div id="sel">
+    <b id="sel-nome"></b> <span class="note" id="sel-info"></span>
+    <div class="row" style="margin-top:8px">
+      <input type="number" id="gr" value="100" min="1" style="width:90px" aria-label="Quantidade em gramas"> g
+      <select id="ref" aria-label="Refeição"></select>
+      <button id="b-add">Adicionar</button>
+      <button class="ghost" id="b-canc">Cancelar</button>
+    </div>
+  </div>
+  <div id="res" aria-live="polite"></div>
+  <details>
+    <summary>Adicionar manualmente</summary>
+    <p class="note" style="margin:8px 0 0">Indique os valores da porção que comeu. Se deixar as kcal em branco, calculo-as a partir dos macros.</p>
+    <form class="row" id="f-man">
+      <input id="m-n" placeholder="Nome" required style="flex:1 1 140px">
+      <input id="m-k" type="number" min="0" step="any" placeholder="kcal" aria-label="Calorias" style="width:80px">
+      <input id="m-p" type="number" min="0" step="any" placeholder="Prot. g" aria-label="Proteína em gramas" style="width:80px">
+      <input id="m-h" type="number" min="0" step="any" placeholder="Hidr. g" aria-label="Hidratos em gramas" style="width:80px">
+      <input id="m-g" type="number" min="0" step="any" placeholder="Gord. g" aria-label="Gordura em gramas" style="width:80px">
+      <select id="m-r" aria-label="Refeição"></select>
+      <button>Adicionar</button>
+    </form>
+  </details>
+  <details>
+    <summary>Definições da API USDA</summary>
+    <div class="row"><input id="chave" placeholder="Chave API (por omissão DEMO_KEY)" style="flex:1"></div>
+    <p class="note">A DEMO_KEY tem limites baixos. Pode pedir uma chave gratuita em fdc.nal.usda.gov.</p>
+  </details>
+  <p class="note">Valores por 100 g. A tabela local tem valores aproximados de alimentos comuns; confirme na tabela do INSA (portfir.insa.pt) se precisar de rigor. O Open Food Facts e o USDA precisam de ligação à internet e a página tem de estar aberta a partir do ficheiro descarregado.</p>
+</section>
+</div>
+<section class="wk" aria-labelledby="h-plano"><h2 id="h-plano">Plano alimentar</h2>
+  <div class="row" id="pf">
+    <select id="sexo" aria-label="Sexo"><option value="m">Homem</option><option value="f">Mulher</option></select>
+    <label>Idade <input type="number" id="idade" min="14" max="99" style="width:70px"></label>
+    <label>Altura <input type="number" id="altura" min="120" max="230" style="width:80px"> cm</label>
+    <label>Peso <input type="number" id="peso" min="20" step="0.5" style="width:80px"> kg</label>
+    <select id="ativ" aria-label="Atividade física"><option value="1.2">Sedentário</option><option value="1.375">Pouco ativo (1–3 treinos/semana)</option><option value="1.55">Ativo (3–5 treinos/semana)</option><option value="1.725">Muito ativo (6–7 treinos/semana)</option></select>
+    <select id="obj" aria-label="Objetivo"><option value="perder">Perder peso</option><option value="manter">Manter peso</option><option value="ganhar">Ganhar peso</option></select>
+  </div>
+  <div id="plano"></div>
+</section>
+<section class="wk" aria-labelledby="h-sem"><h2 id="h-sem">Últimos 7 dias</h2><table><thead><tr><th>Dia</th><th>kcal</th><th>Proteína (g)</th></tr></thead><tbody id="sem"></tbody></table><p class="note" id="med"></p></section>
+<section class="wk" aria-labelledby="h-bk"><h2 id="h-bk">Cópia de segurança</h2>
+  <div class="row"><button id="b-exp">Exportar dados</button><button class="ghost" id="b-imp">Importar dados</button><input type="file" id="f-imp" accept=".json,application/json" hidden></div>
+  <p class="note" id="bk-info"></p>
+  <p class="note">Os dados ficam guardados só neste dispositivo. Exporte de tempos a tempos para não os perder se limpar os dados do browser ou mudar de telemóvel. Ao importar, os dados atuais são substituídos.</p>
+</section>
+</main>
+
+<script>
+const REFS=["Pequeno-almoço","Almoço","Lanche","Jantar","Outros"];
+// [nome, kcal, prot, hidr, gord] por 100 g
+const LOCAL=[
+["Arroz cozido",130,2.7,28,.3],["Batata cozida",86,1.7,20,.1],["Massa cozida",158,5.8,31,.9],["Pão de trigo",265,9,49,3.2],
+["Feijão cozido",127,8.7,23,.5],["Grão-de-bico cozido",164,8.9,27,2.6],["Peito de frango grelhado",165,31,0,3.6],["Ovo cozido",155,13,1.1,11],
+["Bacalhau cozido",105,23,0,.9],["Salmão grelhado",208,22,0,13],["Atum em água",116,26,0,1],["Carne de vaca grelhada",250,26,0,15],
+["Lombo de porco grelhado",242,27,0,14],["Leite meio-gordo",46,3.3,4.8,1.6],["Iogurte natural",61,3.5,4.7,3.3],["Queijo flamengo",350,25,1,27],
+["Maçã",52,.3,14,.2],["Banana",89,1.1,23,.3],["Laranja",47,.9,12,.1],["Pera",57,.4,15,.1],["Tomate",18,.9,3.9,.2],["Alface",15,1.4,2.9,.2],
+["Cenoura",41,.9,10,.2],["Brócolos cozidos",35,2.4,7,.4],["Couve galega cozida",30,2,5,.5],["Azeite",884,0,0,100],["Manteiga",717,.9,.1,81],
+["Açúcar",387,0,100,0],["Pastel de nata",298,5,35,15],["Bolacha Maria",440,7,75,12],["Amêndoas",579,21,22,50],["Nozes",654,15,14,65],
+["Aveia em flocos",379,13,68,6.5],["Cerveja",43,.5,3.6,0],["Vinho tinto",85,.1,2.6,0],["Café sem açúcar",2,.1,0,0],
+["Sopa de legumes",35,1,5,1.2],["Batata frita",312,3.4,41,15],["Pizza",266,11,33,10],
+["Bacalhau à Brás",170,11,10,10,300],["Bacalhau com natas",190,10,10,12,300],["Bacalhau com todos",130,12,8,6,400],["Bacalhau assado com batatas",120,12,8,5,400],["Pataniscas de bacalhau",250,10,22,13,100],["Pastéis de bacalhau",230,11,22,11,80],["Arroz de pato",190,10,25,5,300],["Arroz de marisco",120,8,17,2.5,350],["Arroz de tomate",150,3,28,3,150],["Feijoada à portuguesa",130,8,9,7,350],["Cozido à portuguesa",150,13,6,8,450],["Francesinha",270,14,15,17,450],["Caldo verde",45,1.5,5,2,300],["Sopa de feijão",55,2.5,8,1.5,300],["Canja de galinha",40,3,4,1.5,300],["Sardinhas grelhadas",190,25,0,10,150],["Polvo à lagareiro",140,18,4,5,300],["Caldeirada de peixe",90,10,5,3,400],["Dourada grelhada",125,22,0,4,200],["Bifana no pão",250,17,20,11,170],["Prego no pão",260,16,22,12,180],["Tripas à moda do Porto",110,9,9,4,350],["Rojões",230,20,5,14,200],["Carne de porco à alentejana",190,16,5,12,350],["Iscas com elas",170,17,3,10,250],["Pica-pau",200,22,3,11,200],["Cabrito assado",220,27,0,12,200],["Ensopado de borrego",150,12,6,9,350],["Açorda alentejana",100,3,14,3.5,300],["Migas",200,5,20,11,200],["Feijão-frade com atum",120,9,14,3,250],["Salada russa",160,3,10,12,120],["Peixinhos da horta",250,5,25,14,100],["Rissol de camarão",280,8,26,16,70],["Croquete de carne",260,9,22,15,60],["Alheira assada",240,17,10,15,120],["Chouriço assado",330,20,2,27,60],["Presunto",250,30,0,14,40],["Queijo da Serra",380,22,1,32,40],["Queijo fresco",100,11,3,5,100],["Tosta mista",280,14,25,13,150],["Broa de milho",230,5,48,2,60],["Azeitonas",145,1,4,15,30],["Arroz doce",160,3,28,3.5,120],["Leite-creme",160,4,22,6,120],["Pudim flan",165,4.5,25,5,120],["Pão de ló",330,8,50,11,70],["Bolo de arroz",370,6,52,16,70],["Bola de Berlim",340,6,44,15,100],["Queijada de Sintra",320,7,45,12,60],
+["Pão integral",250,9,45,3.5],["Fiambre de peru",105,17,2,3],["Compota",250,0.4,62,0.1],["Mel",304,0.3,82,0],["Sumo de laranja",45,0.7,10,0.2],["Morangos",32,0.7,8,0.3],["Uvas",69,0.7,18,0.2],["Melancia",30,0.6,8,0.2],["Kiwi",61,1.1,15,0.5],["Pêssego",39,0.9,10,0.3],["Courgette",17,1.2,3,0.3],["Espinafres cozidos",23,3,3.8,0.3],["Grelos cozidos",25,2.5,3,0.4],["Pepino",15,0.7,3.6,0.1],["Ervilhas cozidas",80,5,14,0.4],["Lentilhas cozidas",116,9,20,0.4],["Favas cozidas",110,8,19,0.4],["Pescada cozida",90,19,0,1.5],["Robalo grelhado",125,23,0,3],["Carapau grelhado",150,23,0,6],["Cavala grelhada",205,19,0,14],["Peru grelhado",135,29,0,2],["Coxa de frango assada",200,25,0,11],["Ovo mexido",150,10,1.5,11],["Leite magro",35,3.4,5,0.1],["Iogurte grego",97,9,4,5],["Batata-doce cozida",90,1.6,21,0.1],["Cuscuz cozido",112,3.8,23,0.2],["Manteiga de amendoim",588,25,20,50],["Tofu",76,8,2,4.5],["Tremoços",119,16,10,3]
+].map(a=>({nome:a[0],k:a[1],p:a[2],h:a[3],g:a[4],por:a[5],src:"Local"}));
+
+const $=id=>document.getElementById(id);
+let S={meta:2000,metap:100,peso:"",perfil:{sexo:"m",idade:"",altura:"",ativ:"1.375",obj:"manter"},dias:{},chave:""};
+try{const t=localStorage.getItem("calorias-v1");if(t)S=Object.assign(S,JSON.parse(t))}catch(e){}
+const save=()=>{try{localStorage.setItem("calorias-v1",JSON.stringify(S))}catch(e){}};
+const hoje=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const r1=n=>Math.round(n*10)/10;
+let sel=null;
+
+["ref","m-r"].forEach(id=>$(id).innerHTML=REFS.map((r,i)=>`<option value="${i}">${r}</option>`).join(""));
+function aplicar(){$("data").value=hoje();$("meta").value=S.meta;$("metap").value=S.metap;$("peso").value=S.peso;Object.keys(S.perfil).forEach(k=>$(k).value=S.perfil[k]);$("chave").value=S.chave||""}
+aplicar();
+
+function dia(){return S.dias[$("data").value]||(S.dias[$("data").value]=[])}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+function render(){
+  const L=dia();let t=0,p=0,h=0,g=0;
+  L.forEach(x=>{t+=x.k;p+=x.p||0;h+=x.h||0;g+=x.g||0});
+  $("total").textContent=Math.round(t);
+  const meta=+$("meta").value||2000;
+  $("resta").textContent=Math.round(meta-t);
+  const b=$("barra");b.style.width=Math.min(100,t/meta*100)+"%";b.style.background=t>meta?"var(--warn)":"var(--ok)";
+  const mp=+$("metap").value||0;
+  $("mp").textContent=Math.round(p);$("faltap").textContent=Math.max(0,Math.round(mp-p));
+  $("barrap").style.width=mp?Math.min(100,p/mp*100)+"%":"0";
+  const kg=+$("peso").value,rg=PR[$("obj").value]||PR.manter;$("sug").textContent=kg?`Recomendado: ${Math.round(kg*rg[0])}–${Math.round(kg*rg[1])} g/dia (${rg[0]}–${rg[1]} g/kg)`:"";
+  semana();
+  $("mh").textContent=Math.round(h);$("mg").textContent=Math.round(g);
+  $("refeicoes").innerHTML=REFS.map((nome,i)=>{
+    const it=L.map((x,j)=>({x,j})).filter(o=>o.x.ref==i);
+    if(!it.length)return"";
+    const sub=it.reduce((a,o)=>a+o.x.k,0);
+    return`<div class="meal"><h3><span>${nome}</span><span>${Math.round(sub)} kcal</span></h3>`+
+      it.map(o=>`<div class="item"><span>${esc(o.x.nome)} <small>${o.x.gr?o.x.gr+" g":""}</small></span><span>${Math.round(o.x.k)} kcal<button class="x" data-del="${o.j}" aria-label="Remover ${esc(o.x.nome)}">×</button></span></div>`).join("")+`</div>`;
+  }).join("")||'<p class="empty">Ainda não adicionou nada neste dia. Pesquise um alimento ao lado.</p>';
+}
+
+$("refeicoes").onclick=e=>{const j=e.target.dataset.del;if(j!==undefined){dia().splice(+j,1);save();render()}};
+$("data").onchange=render;
+$("meta").onchange=()=>{S.meta=+$("meta").value||2000;save();render()};
+$("metap").onchange=()=>{S.metap=+$("metap").value||0;save();render()};
+$("pf").onchange=()=>{S.peso=$("peso").value;["sexo","idade","altura","ativ","obj"].forEach(k=>S.perfil[k]=$(k).value);save();PV=[0,0,0,0];plano();render()};
+$("chave").onchange=()=>{S.chave=$("chave").value.trim();save()};
+
+function semana(){
+  const mk=+$("metap").value||0,base=new Date($("data").value+"T12:00:00");
+  let rows="",sk=0,sp=0,n=0;
+  for(let i=0;i<7;i++){
+    const d=new Date(base);d.setDate(d.getDate()-i);
+    const L=S.dias[new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)]||[];
+    const k=L.reduce((a,x)=>a+x.k,0),p=L.reduce((a,x)=>a+(x.p||0),0);
+    if(L.length){sk+=k;sp+=p;n++}
+    rows+=`<tr><td>${d.toLocaleDateString("pt-PT",{weekday:"short",day:"numeric",month:"short"})}</td><td>${L.length?Math.round(k):"–"}</td><td class="${mk&&p>=mk?"ok":""}">${L.length?Math.round(p):"–"}</td></tr>`;
+  }
+  $("sem").innerHTML=rows;
+  $("med").textContent=n?`Média nos ${n} dias com registos: ${Math.round(sk/n)} kcal e ${Math.round(sp/n)} g de proteína por dia. Os dias a verde atingiram a meta de proteína.`:"Sem registos nestes 7 dias.";
+}
+
+// g de proteína por kg: [mínimo, máximo, alvo]
+const PR={perder:[1.8,2.4,2],manter:[1.4,2,1.6],ganhar:[1.6,2,1.8]};
+const TPL=[
+[["Iogurte com aveia e banana",[["Iogurte natural",200,1],["Aveia em flocos",40],["Banana",100]]],
+["Ovo cozido com pão e leite",[["Ovo cozido",120,1],["Pão de trigo",60],["Leite meio-gordo",200]]],
+["Pão com queijo fresco e pera",[["Queijo fresco",100,1],["Pão de trigo",60],["Pera",120]]],
+["Torrada com fiambre e queijo",[["Fiambre de peru",60,1],["Pão de trigo",60],["Queijo flamengo",20],["Laranja",150]]],
+["Pão integral com ovo mexido e kiwi",[["Ovo mexido",120,1],["Pão integral",60],["Kiwi",150]]],
+["Papas de aveia com banana e mel",[["Leite meio-gordo",250,1],["Aveia em flocos",50],["Banana",100],["Mel",10]]],
+["Iogurte grego com morangos e nozes",[["Iogurte grego",200,1],["Morangos",120],["Nozes",15],["Aveia em flocos",30]]],
+["Omelete com pão integral e maçã",[["Ovo mexido",150,1],["Pão integral",60],["Tomate",80],["Maçã",150]]]],
+[["Frango com arroz e brócolos",[["Peito de frango grelhado",150,1],["Arroz cozido",180],["Brócolos cozidos",100],["Azeite",10]]],
+["Bacalhau cozido com batata e brócolos",[["Bacalhau cozido",180,1],["Batata cozida",200],["Brócolos cozidos",100],["Azeite",10]]],
+["Carne de vaca com massa e tomate",[["Carne de vaca grelhada",130,1],["Massa cozida",180],["Tomate",100],["Azeite",10]]],
+["Bacalhau com grão e grelos",[["Bacalhau cozido",160,1],["Grão-de-bico cozido",120],["Grelos cozidos",120],["Azeite",10]]],
+["Sardinhas grelhadas com batata e salada",[["Sardinhas grelhadas",150,1],["Batata cozida",200],["Tomate",100],["Alface",50],["Azeite",8]]],
+["Peru com arroz e courgette",[["Peru grelhado",150,1],["Arroz cozido",180],["Courgette",120],["Azeite",10]]],
+["Lombo de porco com batata e ervilhas",[["Lombo de porco grelhado",130,1],["Batata cozida",200],["Ervilhas cozidas",100],["Azeite",8]]],
+["Pescada cozida com batata e legumes",[["Pescada cozida",200,1],["Batata cozida",200],["Cenoura",80],["Brócolos cozidos",100],["Azeite",12]]],
+["Bacalhau à Brás com salada",[["Bacalhau à Brás",250,1],["Tomate",100],["Alface",60],["Pão de trigo",50]]],
+["Carapau grelhado com batata e tomate",[["Carapau grelhado",170,1],["Batata cozida",200],["Tomate",100],["Azeite",10]]],
+["Cozido à portuguesa",[["Cozido à portuguesa",400,1],["Batata cozida",100]]],
+["Feijoada com arroz e couve",[["Feijoada à portuguesa",350,1],["Arroz cozido",100],["Couve galega cozida",80]]],
+["Arroz de pato com salada",[["Arroz de pato",300,1],["Tomate",100],["Alface",60]]],
+["Lentilhas com ovo e arroz (vegetariano)",[["Lentilhas cozidas",200,1],["Ovo cozido",100,1],["Arroz cozido",100],["Espinafres cozidos",100],["Azeite",8]]],
+["Tofu com arroz e brócolos (vegetariano)",[["Tofu",150,1],["Arroz cozido",180],["Brócolos cozidos",120],["Azeite",10]]]],
+[["Queijo fresco, maçã e amêndoas",[["Queijo fresco",100,1],["Maçã",150],["Amêndoas",15]]],
+["Iogurte com banana e nozes",[["Iogurte natural",150,1],["Banana",100],["Nozes",15]]],
+["Sandes de atum",[["Atum em água",80,1],["Pão de trigo",50]]],
+["Sandes de fiambre de peru",[["Fiambre de peru",60,1],["Pão integral",60],["Tomate",60]]],
+["Iogurte grego com morangos",[["Iogurte grego",150,1],["Morangos",120],["Amêndoas",15]]],
+["Ovo cozido com pera e pão",[["Ovo cozido",100,1],["Pera",150],["Pão de trigo",30]]],
+["Leite com pão integral e queijo fresco",[["Leite meio-gordo",200,1],["Pão integral",50],["Queijo fresco",50,1]]],
+["Tremoços e laranja",[["Tremoços",120,1],["Laranja",150]]],
+["Iogurte com pão e manteiga de amendoim",[["Iogurte natural",125,1],["Pão integral",40],["Manteiga de amendoim",15],["Kiwi",100]]],
+["Leite magro com pastel de nata",[["Leite magro",200,1],["Pastel de nata",60]]]],
+[["Sopa de legumes e salmão com batata",[["Sopa de legumes",250],["Salmão grelhado",130,1],["Batata cozida",120],["Alface",60],["Azeite",8]]],
+["Sopa de legumes e ovo com grão",[["Sopa de legumes",250],["Ovo cozido",150,1],["Grão-de-bico cozido",100],["Tomate",80],["Azeite",8]]],
+["Dourada com arroz e brócolos",[["Dourada grelhada",170,1],["Arroz cozido",120],["Brócolos cozidos",100],["Azeite",8]]],
+["Caldo verde com omelete",[["Caldo verde",300],["Ovo mexido",150,1],["Pão integral",40],["Tomate",80],["Azeite",5]]],
+["Sopa de feijão com peru e batata",[["Sopa de feijão",300],["Peru grelhado",130,1],["Batata cozida",100],["Alface",60],["Azeite",8]]],
+["Canja com queijo fresco e pão",[["Canja de galinha",300],["Queijo fresco",100,1],["Pão integral",50],["Tomate",80]]],
+["Pescada com batata e grelos",[["Pescada cozida",200,1],["Batata cozida",180],["Grelos cozidos",120],["Azeite",12]]],
+["Coxa de frango com batata-doce",[["Coxa de frango assada",150,1],["Batata-doce cozida",200],["Alface",60],["Tomate",80],["Azeite",8]]],
+["Bacalhau com todos e couve",[["Bacalhau com todos",400,1],["Couve galega cozida",100],["Azeite",5]]],
+["Sardinhas com pão e salada de tomate",[["Sardinhas grelhadas",130,1],["Pão integral",60],["Tomate",120],["Pepino",80],["Azeite",8]]],
+["Omelete de espinafres com batata",[["Ovo mexido",150,1],["Espinafres cozidos",120],["Batata cozida",150],["Azeite",5]]],
+["Tofu salteado com cuscuz (vegetariano)",[["Tofu",150,1],["Cuscuz cozido",150],["Courgette",120],["Azeite",10]]],
+["Robalo com batata e courgette",[["Robalo grelhado",170,1],["Batata cozida",150],["Courgette",100],["Azeite",10]]],
+["Feijão-frade com atum e ovo",[["Feijão-frade com atum",300,1],["Alface",60],["Tomate",80],["Ovo cozido",60]]]]];
+const DIV=[.25,.30,.15,.30];
+let PV=[0,0,0,0],PLAN=null,PM=[];
+const sum=(a,f)=>a.reduce((s,o)=>s+f(o),0);
+
+function refeicao(i,kM,pM){
+  const [tt,base]=TPL[i][PV[i]%TPL[i].length],T=base.map(([n,g,pp])=>({a:LOCAL.find(x=>x.nome==n),g,pp}));
+  const P=T.filter(o=>o.pp),O=T.filter(o=>!o.pp);
+  const s1=Math.min(1.8,Math.max(.6,(pM-sum(O,o=>o.a.p*o.g/100))/sum(P,o=>o.a.p*o.g/100)));
+  P.forEach(o=>o.q=o.g*s1);
+  const s2=Math.min(3,Math.max(.4,(kM-sum(P,o=>o.a.k*o.q/100))/sum(O,o=>o.a.k*o.g/100)));
+  O.forEach(o=>o.q=o.g*s2);
+  const R=T.map(o=>{const q=Math.max(5,Math.round(o.q/5)*5),f=q/100;return{nome:o.a.nome,gr:q,k:o.a.k*f,p:o.a.p*f,h:o.a.h*f,g:o.a.g*f}});R.titulo=tt;return R;
+}
+
+function plano(){
+  const el=$("plano"),sx=$("sexo").value,id=+$("idade").value,alt=+$("altura").value,kg=+$("peso").value,ob=$("obj").value;
+  if(!(id&&alt&&kg)){el.innerHTML='<p class="empty">Preencha idade, altura e peso para ver o plano.</p>';PLAN=null;return}
+  const bmr=10*kg+6.25*alt-5*id+(sx=="m"?5:-161),tdee=bmr*(+$("ativ").value);
+  const kcal=Math.round((ob=="perder"?Math.max(tdee*.8,bmr):ob=="ganhar"?tdee*1.1:tdee)/10)*10;
+  const rg=PR[ob],prot=Math.round(kg*rg[2]),gord=Math.round(kcal*.28/9),hid=Math.max(0,Math.round((kcal-prot*4-gord*9)/4));
+  const imc=kg/Math.pow(alt/100,2);
+  PLAN={kcal,prot};
+  PM=DIV.map((d,i)=>refeicao(i,kcal*d,prot*d));
+  el.innerHTML=`<p class="note">IMC ${r1(imc)} · metabolismo basal ${Math.round(bmr)} kcal · gasto diário estimado ${Math.round(tdee)} kcal</p>
+  <p><span class="big">${kcal}</span> kcal por dia · proteína <b>${prot} g</b> (intervalo ${Math.round(kg*rg[0])}–${Math.round(kg*rg[1])} g) · hidratos ≈ ${hid} g · gordura ≈ ${gord} g
+  <button id="b-metas" style="margin-left:8px">Usar como metas</button></p>
+  <div class="plan">`+PM.map((it,i)=>`<div class="pm"><h3>${REFS[i]} · ${Math.round(sum(it,x=>x.k))} kcal · ${Math.round(sum(it,x=>x.p))} g prot.</h3><p style="margin:0 0 6px"><b>${esc(it.titulo)}</b></p><ul>${it.map(x=>`<li>${esc(x.nome)} ${x.gr} g</li>`).join("")}</ul>
+  <button class="ghost" data-var="${i}">Outra sugestão</button> <button data-reg="${i}">Registar</button></div>`).join("")+`</div>
+  <p class="note">Estimativa pela fórmula de Mifflin-St Jeor. ${ob=="perder"?"Défice de cerca de 20 %, sem descer abaixo do metabolismo basal. ":ob=="ganhar"?"Excedente de cerca de 10 %. ":""}As quantidades de proteína seguem o intervalo de 1,4–2,0 g/kg da ISSN para quem faz exercício, com valores mais altos ao perder peso para preservar músculo. Não substitui um nutricionista, e quem tem doença renal, está grávida ou tem outra condição de saúde deve consultar um profissional antes.</p>`;
+}
+$("plano").onclick=e=>{const t=e.target;
+  if(t.id=="b-metas"&&PLAN){S.meta=PLAN.kcal;S.metap=PLAN.prot;$("meta").value=S.meta;$("metap").value=S.metap;save();render()}
+  if(t.dataset.var!==undefined){const i=+t.dataset.var;PV[i]++;PM[i]=refeicao(i,PLAN.kcal*DIV[i],PLAN.prot*DIV[i]);plano2(i)}
+  if(t.dataset.reg!==undefined){const i=+t.dataset.reg;PM[i].forEach(x=>dia().push({...x,ref:i}));save();render()}};
+function plano2(){plano()}
+
+function add(item){dia().push(item);save();render()}
+
+$("f-man").onsubmit=e=>{e.preventDefault();
+  const p=+$("m-p").value||0,h=+$("m-h").value||0,g=+$("m-g").value||0;
+  const k=$("m-k").value!==""?+$("m-k").value:p*4+h*4+g*9;
+  if(!k&&!p&&!h&&!g){$("m-k").focus();return}
+  add({nome:$("m-n").value,k,p,h,g,ref:+$("m-r").value});e.target.reset();$("m-r").value=1;};
+
+function mostrar(lista,aviso){
+  const el=$("res");
+  if(!lista.length){el.innerHTML=`<p class="empty">${aviso||"Sem resultados."}</p>`;return}
+  el.innerHTML=(aviso?`<p class="note">${aviso}</p>`:"")+lista.map((a,i)=>
+    `<div class="res"><span>${esc(a.nome)}<span class="src">${a.src}</span><br><small class="note">${Math.round(a.k)} kcal · P ${r1(a.p)} · H ${r1(a.h)} · G ${r1(a.g)} (100 g)</small></span><button class="ghost" data-i="${i}">Escolher</button></div>`).join("");
+  el._l=lista;
+}
+$("res").onclick=e=>{const i=e.target.dataset.i;if(i===undefined)return;
+  sel=$("res")._l[+i];$("sel").style.display="block";$("gr").value=sel.por||100;$("sel-nome").textContent=sel.nome;
+  $("sel-info").textContent=`${Math.round(sel.k)} kcal/100 g`+(sel.por?` · porção habitual ${sel.por} g`:"");$("gr").focus();};
+$("b-canc").onclick=()=>{sel=null;$("sel").style.display="none"};
+$("b-add").onclick=()=>{if(!sel)return;const f=(+$("gr").value||100)/100;
+  add({nome:sel.nome,gr:+$("gr").value||100,k:sel.k*f,p:sel.p*f,h:sel.h*f,g:sel.g*f,ref:+$("ref").value});
+  sel=null;$("sel").style.display="none"};
+
+const norm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+
+async function pOFF(q){
+  const u="https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=12&cc=pt&lc=pt&fields=product_name,brands,nutriments&search_terms="+encodeURIComponent(q);
+  const d=await (await fetch(u)).json();
+  return(d.products||[]).filter(p=>p.product_name&&p.nutriments&&p.nutriments["energy-kcal_100g"]!=null).map(p=>({
+    nome:p.product_name+(p.brands?" ("+p.brands.split(",")[0]+")":""),
+    k:+p.nutriments["energy-kcal_100g"],p:+p.nutriments.proteins_100g||0,h:+p.nutriments.carbohydrates_100g||0,g:+p.nutriments.fat_100g||0,src:"Open Food Facts"}));
+}
+async function pUSDA(q){
+  const key=S.chave||"DEMO_KEY";
+  const u=`https://api.nal.usda.gov/fdc/v1/foods/search?pageSize=12&dataType=Foundation,SR%20Legacy&api_key=${key}&query=`+encodeURIComponent(q);
+  const d=await (await fetch(u)).json();
+  return(d.foods||[]).map(f=>{const v=id=>{const n=(f.foodNutrients||[]).find(x=>x.nutrientId===id);return n?+n.value:0};
+    return{nome:f.description,k:v(1008),p:v(1003),h:v(1005),g:v(1004),src:"USDA"}}).filter(a=>a.k>0);
+}
+
+$("f-pesq").onsubmit=async e=>{
+  e.preventDefault();const q=$("q").value.trim();if(!q)return;
+  $("res").innerHTML='<p class="empty">A pesquisar…</p>';
+  let out=[],falhas=[];
+  if($("s-loc").checked){const n=norm(q);out.push(...LOCAL.filter(a=>norm(a.nome).includes(n)))}
+  const tarefas=[];
+  if($("s-off").checked)tarefas.push(["Open Food Facts",pOFF]);
+  if($("s-usda").checked)tarefas.push(["USDA",pUSDA]);
+  await Promise.all(tarefas.map(async([n,f])=>{try{out.push(...await f(q))}catch(err){falhas.push(n)}}));
+  mostrar(out,falhas.length?`Não foi possível consultar: ${falhas.join(", ")}. Verifique a ligação à internet e abra a página a partir do ficheiro descarregado.`:"");
+};
+
+render();plano();
+
+// Cópia de segurança
+function infoBk(){$("bk-info").textContent=S.backup?"Última cópia de segurança: "+new Date(S.backup).toLocaleString("pt-PT"):"Ainda não fez nenhuma cópia de segurança."}
+$("b-exp").onclick=async()=>{
+  S.backup=new Date().toISOString();save();infoBk();
+  const {chave,...dados}=S,nome=`calorias-backup-${hoje()}.json`;
+  const f=new File([JSON.stringify({app:"controlo-calorias",versao:1,...dados},null,1)],nome,{type:"application/json"});
+  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:nome});return}}catch(e){if(e.name=="AbortError")return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=nome;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+$("b-imp").onclick=()=>$("f-imp").click();
+$("f-imp").onchange=async e=>{
+  const f=e.target.files[0];e.target.value="";if(!f)return;
+  try{
+    const d=JSON.parse(await f.text());
+    if(!d||typeof d.dias!=="object"||Array.isArray(d.dias))throw 0;
+    const dias={};
+    for(const[k,v]of Object.entries(d.dias))if(Array.isArray(v))dias[k]=v.filter(x=>x&&typeof x.nome=="string"&&isFinite(x.k));
+    if(!confirm(`Importar ${Object.keys(dias).length} dia(s) de registos? Os dados atuais serão substituídos.`))return;
+    S={...S,meta:+d.meta||2000,metap:+d.metap||0,peso:d.peso||"",perfil:{...S.perfil,...(d.perfil||{})},dias};
+    save();PV=[0,0,0,0];aplicar();plano();render();infoBk();alert("Dados importados.");
+  }catch(err){alert("Ficheiro inválido. Escolha uma cópia de segurança exportada por esta aplicação.")}
+};
+infoBk();
+
+// PWA: modo offline e armazenamento persistente
+if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+</script>
+</body>
+</html>
