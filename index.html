@@ -103,16 +103,22 @@ button{min-height:40px}
   <div id="res" aria-live="polite"></div>
   <details id="det-man">
     <summary>Adicionar manualmente</summary>
-    <p class="note" style="margin:8px 0 0">Indique os valores da porção que comeu. Se deixar as kcal em branco, calculo-as a partir dos macros.</p>
+    <p class="note" style="margin:8px 0 0">Indique os valores da porção que comeu. Se deixar as kcal em branco, calculo-as a partir dos macros. Se indicar o código de barras e a quantidade a que os valores se referem, o produto fica guardado e a app preenche-o sozinha da próxima vez que o ler.</p>
     <form class="row" id="f-man">
       <input id="m-n" placeholder="Nome" required style="flex:1 1 140px">
       <input id="m-k" type="number" min="0" step="any" placeholder="kcal" aria-label="Calorias" style="width:80px">
       <input id="m-p" type="number" min="0" step="any" placeholder="Prot. g" aria-label="Proteína em gramas" style="width:80px">
       <input id="m-h" type="number" min="0" step="any" placeholder="Hidr. g" aria-label="Hidratos em gramas" style="width:80px">
       <input id="m-g" type="number" min="0" step="any" placeholder="Gord. g" aria-label="Gordura em gramas" style="width:80px">
+      <input id="m-q" type="number" min="1" step="any" placeholder="Qtd. g/ml" aria-label="Quantidade em gramas ou mililitros" style="width:90px">
+      <input id="m-c" inputmode="numeric" placeholder="Código de barras (opcional)" aria-label="Código de barras" style="flex:1 1 180px">
       <select id="m-r" aria-label="Refeição"></select>
       <button>Adicionar</button>
     </form>
+  </details>
+  <details>
+    <summary>Os meus produtos</summary>
+    <div id="meus"></div>
   </details>
   <details>
     <summary>Definições da API USDA</summary>
@@ -165,7 +171,7 @@ const LOCAL=[
 ].map(a=>({nome:a[0],k:a[1],p:a[2],h:a[3],g:a[4],por:a[5],src:"Local"}));
 
 const $=id=>document.getElementById(id);
-let S={meta:2000,metap:100,peso:"",perfil:{sexo:"m",idade:"",altura:"",ativ:"1.375",obj:"manter"},dias:{},chave:""};
+let S={meta:2000,metap:100,peso:"",produtos:{},perfil:{sexo:"m",idade:"",altura:"",ativ:"1.375",obj:"manter"},dias:{},chave:""};
 try{const t=localStorage.getItem("calorias-v1");if(t)S=Object.assign(S,JSON.parse(t))}catch(e){}
 const save=()=>{try{localStorage.setItem("calorias-v1",JSON.stringify(S))}catch(e){}};
 const hoje=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
@@ -314,7 +320,15 @@ $("f-man").onsubmit=e=>{e.preventDefault();
   const p=+$("m-p").value||0,h=+$("m-h").value||0,g=+$("m-g").value||0;
   const k=$("m-k").value!==""?+$("m-k").value:p*4+h*4+g*9;
   if(!k&&!p&&!h&&!g){$("m-k").focus();return}
-  add({nome:$("m-n").value,k,p,h,g,ref:+$("m-r").value});e.target.reset();$("m-r").value=1;};
+  const q=+$("m-q").value||0,cod=$("m-c").value.replace(/\D/g,"");
+  if(cod&&!q){alert("Para guardar o produto com este código, indique a quantidade em g ou ml a que os valores se referem.");$("m-q").focus();return}
+  if(cod){const f=100/q;S.produtos[cod]={nome:$("m-n").value,k:k*f,p:p*f,h:h*f,g:g*f,por:q};listaMeus()}
+  add({nome:$("m-n").value,k,p,h,g,gr:q||undefined,ref:+$("m-r").value});e.target.reset();$("m-r").value=1;};
+function listaMeus(){
+  const e=Object.entries(S.produtos||{});
+  $("meus").innerHTML=e.length?e.map(([c,a])=>`<div class="item"><span>${esc(a.nome)} <small>${c} · ${Math.round(a.k)} kcal/100 g</small></span><button class="x" data-c="${c}" aria-label="Remover ${esc(a.nome)}">×</button></div>`).join(""):'<p class="note">Ainda não guardou nenhum produto.</p>';
+}
+$("meus").onclick=e=>{const c=e.target.dataset.c;if(c&&confirm("Remover este produto guardado?")){delete S.produtos[c];save();listaMeus()}};
 
 function mostrar(lista,aviso){
   const el=$("res");
@@ -352,7 +366,7 @@ $("f-pesq").onsubmit=async e=>{
   e.preventDefault();const q=$("q").value.trim();if(!q)return;
   $("res").innerHTML='<p class="empty">A pesquisar…</p>';
   let out=[],falhas=[];
-  if($("s-loc").checked){const n=norm(q);out.push(...LOCAL.filter(a=>norm(a.nome).includes(n)))}
+  if($("s-loc").checked){const n=norm(q);out.push(...Object.values(S.produtos||{}).filter(a=>norm(a.nome).includes(n)).map(a=>({...a,src:"Os meus produtos"})),...LOCAL.filter(a=>norm(a.nome).includes(n)))}
   const tarefas=[];
   if($("s-off").checked)tarefas.push(["Open Food Facts",pOFF]);
   if($("s-usda").checked)tarefas.push(["USDA",pUSDA]);
@@ -360,7 +374,7 @@ $("f-pesq").onsubmit=async e=>{
   mostrar(out,falhas.length?`Não foi possível consultar: ${falhas.join(", ")}. Verifique a ligação à internet e abra a página a partir do ficheiro descarregado.`:"");
 };
 
-render();plano();
+render();plano();listaMeus();
 
 // Leitor de código de barras (câmara nativa ou ZXing como alternativa, p. ex. no iPhone)
 let camStream=null,camTimer=null,zxReader=null,zxPronto=null,lendo=false;
@@ -404,10 +418,11 @@ function achou(cod){
   try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}
   procurarCodigo(cod);
 }
-function naoEncontrado(cod,nome,campos){
-  $("res").innerHTML=nome?`<p class="empty">Encontrei “${esc(nome)}” (código ${cod}) no Open Food Facts, mas sem calorias nem macros que consiga usar${campos&&campos.length?" (só tem: "+campos.slice(0,8).join(", ")+")":""}. Preencha-os manualmente abaixo.</p>`:`<p class="empty">O código ${cod} não existe no Open Food Facts. Pode adicioná-lo manualmente abaixo.</p>`;
+function naoEncontrado(cod,nome,campos,existe){
+  const resto=" Preencha os valores abaixo e indique a quantidade a que se referem: o produto fica guardado com este código e, da próxima vez, a app preenche-o sozinha.";
+  $("res").innerHTML=`<p class="empty">${!existe?`O código ${cod} não existe no Open Food Facts.`:nome?`Encontrei “${esc(nome)}” (código ${cod}) no Open Food Facts, mas sem calorias nem macros utilizáveis${campos&&campos.length?" (só tem: "+campos.slice(0,8).join(", ")+")":""}.`:`O código ${cod} existe no Open Food Facts, mas sem nome nem valores nutricionais.`}${resto}</p>`;
   if(nome)$("m-n").value=nome;
-  $("det-man").open=true;$("res").scrollIntoView({block:"center"});
+  $("m-c").value=cod;$("det-man").open=true;$("res").scrollIntoView({block:"center"});
 }
 async function lerOFF(cod){
   let ultimo;
@@ -425,12 +440,14 @@ async function lerOFF(cod){
 async function procurarCodigo(cod){
   cod=String(cod).replace(/\D/g,"");
   if(cod.length<8){lendo=false;msg("Escreva o código completo (8 a 13 números).");return}
+  const meu=(S.produtos||{})[cod];
+  if(meu){fechar();mostrar([{...meu,src:"Os meus produtos"}]);$("res").querySelector("button[data-i]").click();return}
   parar();$("cod").value=cod;msg(`Código lido: ${cod}. A consultar o Open Food Facts…`);
   let d;
   try{d=await lerOFF(cod)}
   catch(e){lendo=false;msg(`Código lido: ${cod}, mas o Open Food Facts não respondeu (${e.name=="AbortError"?"demorou demasiado":(e.message||"erro de ligação")}). Toque em Procurar para tentar de novo.`);return}
   const pr=d.product,n=(pr&&pr.nutriments)||{};
-  if(d.status!==1||!pr){fechar();naoEncontrado(cod);return}
+  if(d.status!==1||!pr){fechar();naoEncontrado(cod,"",[],false);return}
   const nome=(pr.product_name||"Produto "+cod)+(pr.brands?" ("+pr.brands.split(",")[0]+")":"");
   const v=x=>n[x]!=null&&n[x]!==""&&!isNaN(+n[x])?+n[x]:null;
   let k=v("energy-kcal_100g"),est=false;
@@ -438,7 +455,7 @@ async function procurarCodigo(cod){
   if(k==null&&v("energy-kcal_serving")!=null&&+pr.serving_quantity>0)k=v("energy-kcal_serving")/pr.serving_quantity*100;
   const P=v("proteins_100g"),H=v("carbohydrates_100g"),G=v("fat_100g");
   if(k==null&&(P!=null||H!=null||G!=null)){k=(P||0)*4+(H||0)*4+(G||0)*9;est=true}
-  if(k==null){fechar();naoEncontrado(cod,nome,Object.keys(n).filter(x=>x.endsWith("_100g")).map(x=>x.replace("_100g","")));return}
+  if(k==null){fechar();naoEncontrado(cod,pr.product_name?nome:"",Object.keys(n).filter(x=>x.endsWith("_100g")).map(x=>x.replace("_100g","")),true);return}
   const it={nome:nome+(est?" (kcal estimadas)":""),k:+k,p:P||0,h:H||0,g:G||0,src:"Open Food Facts",por:+pr.serving_quantity||100};
   fechar();mostrar([it]);$("res").querySelector("button[data-i]").click();
 }
@@ -465,7 +482,7 @@ $("f-imp").onchange=async e=>{
     const dias={};
     for(const[k,v]of Object.entries(d.dias))if(Array.isArray(v))dias[k]=v.filter(x=>x&&typeof x.nome=="string"&&isFinite(x.k));
     if(!confirm(`Importar ${Object.keys(dias).length} dia(s) de registos? Os dados atuais serão substituídos.`))return;
-    S={...S,meta:+d.meta||2000,metap:+d.metap||0,peso:d.peso||"",perfil:{...S.perfil,...(d.perfil||{})},dias};
+    S={...S,meta:+d.meta||2000,metap:+d.metap||0,peso:d.peso||"",perfil:{...S.perfil,...(d.perfil||{})},dias,produtos:(d.produtos&&typeof d.produtos=="object")?d.produtos:{}};
     save();PV=[0,0,0,0];aplicar();plano();render();infoBk();alert("Dados importados.");
   }catch(err){alert("Ficheiro inválido. Escolha uma cópia de segurança exportada por esta aplicação.")}
 };
