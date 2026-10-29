@@ -51,6 +51,12 @@ summary{cursor:pointer;color:var(--blue)}
 details .row{margin-top:8px}
 main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));padding-top:max(20px,env(safe-area-inset-top));padding-bottom:max(60px,env(safe-area-inset-bottom))}
 button{min-height:40px}
+#scan{position:fixed;inset:0;z-index:50;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;text-align:center}
+#scan[hidden]{display:none}
+#scan .vw{position:relative;width:100%;max-width:520px}
+#scan .vw::after{content:"";position:absolute;left:10%;right:10%;top:50%;height:2px;background:#e5484d;opacity:.85}
+#scan video{width:100%;max-height:55vh;border-radius:10px;background:#111;object-fit:cover;display:block}
+#scan input{background:#1b1b1b;color:#fff;border-color:#555}
 </style>
 </head>
 <body>
@@ -78,6 +84,7 @@ button{min-height:40px}
   <form class="row" id="f-pesq">
     <input type="search" id="q" placeholder="Ex.: bacalhau, iogurte, pão" aria-label="Pesquisar alimento">
     <button>Pesquisar</button>
+    <button type="button" class="ghost" id="b-scan">Ler código de barras</button>
   </form>
   <div class="row note" style="margin-top:8px">
     <label><input type="checkbox" id="s-loc" checked> Tabela local</label>
@@ -94,7 +101,7 @@ button{min-height:40px}
     </div>
   </div>
   <div id="res" aria-live="polite"></div>
-  <details>
+  <details id="det-man">
     <summary>Adicionar manualmente</summary>
     <p class="note" style="margin:8px 0 0">Indique os valores da porção que comeu. Se deixar as kcal em branco, calculo-as a partir dos macros.</p>
     <form class="row" id="f-man">
@@ -133,6 +140,12 @@ button{min-height:40px}
   <p class="note">Os dados ficam guardados só neste dispositivo. Exporte de tempos a tempos para não os perder se limpar os dados do browser ou mudar de telemóvel. Ao importar, os dados atuais são substituídos.</p>
 </section>
 </main>
+<div id="scan" hidden role="dialog" aria-modal="true" aria-label="Leitor de código de barras">
+  <p id="scan-msg" aria-live="polite">Aponte a câmara ao código de barras do produto.</p>
+  <div class="vw"><video id="scan-v" playsinline muted></video></div>
+  <form class="row" id="f-cod" style="justify-content:center"><input id="cod" inputmode="numeric" placeholder="Ou escreva o código" aria-label="Código de barras"><button>Procurar</button></form>
+  <button type="button" class="ghost" id="b-fechar" style="color:#fff;border-color:#fff">Fechar</button>
+</div>
 
 <script>
 const REFS=["Pequeno-almoço","Almoço","Lanche","Jantar","Outros"];
@@ -348,6 +361,65 @@ $("f-pesq").onsubmit=async e=>{
 };
 
 render();plano();
+
+// Leitor de código de barras (câmara nativa ou ZXing como alternativa, p. ex. no iPhone)
+let camStream=null,camTimer=null,zxReader=null,zxPronto=null,lendo=false;
+const msg=t=>{$("scan-msg").textContent=t};
+function parar(){
+  clearInterval(camTimer);camTimer=null;
+  if(zxReader){try{zxReader.reset()}catch(e){}zxReader=null}
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
+  $("scan-v").srcObject=null;
+}
+function fechar(){parar();$("scan").hidden=true}
+function carregarZX(){return zxPronto||(zxPronto=new Promise((ok,ko)=>{const t=document.createElement("script");t.src="zxing.min.js";t.onload=ok;t.onerror=()=>{zxPronto=null;ko()};document.head.appendChild(t)}))}
+async function abrirScan(){
+  lendo=false;$("scan").hidden=false;$("cod").value="";msg("A abrir a câmara…");
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){msg("A câmara não está disponível aqui. Escreva o código abaixo.");return}
+  const v=$("scan-v"),cons={video:{facingMode:{ideal:"environment"}},audio:false};
+  try{
+    if("BarcodeDetector"in window){
+      const det=new BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e"]});
+      camStream=await navigator.mediaDevices.getUserMedia(cons);
+      v.srcObject=camStream;await v.play();msg("Aponte a câmara ao código de barras do produto.");
+      camTimer=setInterval(async()=>{try{const r=await det.detect(v);if(r.length)achou(r[0].rawValue)}catch(e){}},300);
+    }else{
+      await carregarZX();
+      const h=new Map([[ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E]]]);
+      zxReader=new ZXing.BrowserMultiFormatReader(h);
+      msg("Aponte a câmara ao código de barras do produto.");
+      zxReader.decodeFromConstraints(cons,v,r=>{if(r)achou(r.getText())});
+    }
+  }catch(err){
+    parar();msg(err&&err.name=="NotAllowedError"?"Sem permissão para usar a câmara. Autorize-a nas definições do browser ou escreva o código abaixo.":"Não consegui abrir a câmara. Escreva o código abaixo.");
+  }
+}
+function achou(cod){
+  if(lendo)return;lendo=true;
+  try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}
+  procurarCodigo(cod);
+}
+function naoEncontrado(cod,semKcal){
+  $("res").innerHTML=`<p class="empty">${semKcal?"Este produto não tem calorias registadas":"Produto não encontrado"} no Open Food Facts (código ${cod}). Pode adicioná-lo manualmente abaixo.</p>`;
+  $("det-man").open=true;$("m-n").focus();
+}
+async function procurarCodigo(cod){
+  cod=String(cod).replace(/\D/g,"");
+  if(cod.length<8){lendo=false;msg("Escreva o código completo (8 a 13 números).");return}
+  parar();msg("A procurar "+cod+"…");
+  try{
+    const d=await(await fetch(`https://world.openfoodfacts.org/api/v2/product/${cod}.json?fields=product_name,brands,nutriments,serving_quantity`)).json();
+    const pr=d.product,n=pr&&pr.nutriments;
+    if(d.status!==1||!n){fechar();naoEncontrado(cod);return}
+    let k=n["energy-kcal_100g"];if(k==null&&n.energy_100g!=null)k=n.energy_100g/4.184;
+    if(k==null){fechar();naoEncontrado(cod,true);return}
+    const it={nome:(pr.product_name||"Produto "+cod)+(pr.brands?" ("+pr.brands.split(",")[0]+")":""),k:+k,p:+n.proteins_100g||0,h:+n.carbohydrates_100g||0,g:+n.fat_100g||0,src:"Open Food Facts",por:+pr.serving_quantity||100};
+    fechar();mostrar([it]);$("res").querySelector("button[data-i]").click();
+  }catch(e){lendo=false;msg("Não foi possível consultar o Open Food Facts. Verifique a ligação à internet e tente de novo.")}
+}
+$("b-scan").onclick=abrirScan;$("b-fechar").onclick=fechar;
+$("f-cod").onsubmit=e=>{e.preventDefault();lendo=true;procurarCodigo($("cod").value)};
+document.addEventListener("keydown",e=>{if(e.key=="Escape"&&!$("scan").hidden)fechar()});
 
 // Cópia de segurança
 function infoBk(){$("bk-info").textContent=S.backup?"Última cópia de segurança: "+new Date(S.backup).toLocaleString("pt-PT"):"Ainda não fez nenhuma cópia de segurança."}

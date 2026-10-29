@@ -1,7 +1,7 @@
 // Service worker: guarda a aplicação para funcionar sem internet.
 // Quando alterar index.html, mude o número da versão abaixo para forçar a atualização.
-const VERSAO = "calorias-v2";
-const FICHEIROS = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png"];
+const VERSAO = "calorias-v3";
+const FICHEIROS = ["./", "index.html", "manifest.webmanifest", "zxing.min.js", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSAO).then(c => c.addAll(FICHEIROS)).then(() => self.skipWaiting()));

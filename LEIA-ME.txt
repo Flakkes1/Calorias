@@ -4,6 +4,7 @@ Conteúdo
   index.html            a aplicação
   manifest.webmanifest  nome, cores e ícones
   sw.js                 modo offline
+  zxing.min.js          leitor de códigos de barras (alternativa para iPhone)
   icons/                ícones
 
 1. Pôr online (grátis, precisa de HTTPS)
