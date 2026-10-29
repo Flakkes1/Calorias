@@ -373,21 +373,26 @@ function parar(){
 }
 function fechar(){parar();$("scan").hidden=true}
 function carregarZX(){return zxPronto||(zxPronto=new Promise((ok,ko)=>{const t=document.createElement("script");t.src="zxing.min.js";t.onload=ok;t.onerror=()=>{zxPronto=null;ko()};document.head.appendChild(t)}))}
-async function abrirScan(){
+async function abrirScan(forcarZX){
   lendo=false;$("scan").hidden=false;$("cod").value="";msg("A abrir a câmara…");
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){msg("A câmara não está disponível aqui. Escreva o código abaixo.");return}
-  const v=$("scan-v"),cons={video:{facingMode:{ideal:"environment"}},audio:false};
+  const v=$("scan-v"),cons={video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},audio:false};
+  const dica="Aponte ao código de barras, a 10–20 cm, direito e bem iluminado. Em latas curvas, rode devagar.";
   try{
-    if("BarcodeDetector"in window){
+    let nativo=false;
+    if(!forcarZX&&"BarcodeDetector"in window){try{nativo=(await BarcodeDetector.getSupportedFormats()).includes("ean_13")}catch(e){}}
+    if(nativo){
       const det=new BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e"]});
       camStream=await navigator.mediaDevices.getUserMedia(cons);
-      v.srcObject=camStream;await v.play();msg("Aponte a câmara ao código de barras do produto.");
-      camTimer=setInterval(async()=>{try{const r=await det.detect(v);if(r.length)achou(r[0].rawValue)}catch(e){}},300);
+      try{const tr=camStream.getVideoTracks()[0],cp=tr.getCapabilities?tr.getCapabilities():{};if(cp.focusMode&&cp.focusMode.includes("continuous"))await tr.applyConstraints({advanced:[{focusMode:"continuous"}]})}catch(e){}
+      v.srcObject=camStream;await v.play();msg(dica);
+      let erros=0;
+      camTimer=setInterval(async()=>{try{const r=await det.detect(v);if(r.length)achou(r[0].rawValue)}catch(e){if(++erros>6){parar();abrirScan(true)}}},250);
     }else{
       await carregarZX();
-      const h=new Map([[ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E]]]);
-      zxReader=new ZXing.BrowserMultiFormatReader(h);
-      msg("Aponte a câmara ao código de barras do produto.");
+      const h=new Map([[ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E]],[ZXing.DecodeHintType.TRY_HARDER,true]]);
+      zxReader=new ZXing.BrowserMultiFormatReader(h,150);
+      msg(dica);
       zxReader.decodeFromConstraints(cons,v,r=>{if(r)achou(r.getText())});
     }
   }catch(err){
@@ -401,7 +406,7 @@ function achou(cod){
 }
 function naoEncontrado(cod,semKcal){
   $("res").innerHTML=`<p class="empty">${semKcal?"Este produto não tem calorias registadas":"Produto não encontrado"} no Open Food Facts (código ${cod}). Pode adicioná-lo manualmente abaixo.</p>`;
-  $("det-man").open=true;$("m-n").focus();
+  $("det-man").open=true;$("res").scrollIntoView({block:"center"});
 }
 async function procurarCodigo(cod){
   cod=String(cod).replace(/\D/g,"");
@@ -417,7 +422,7 @@ async function procurarCodigo(cod){
     fechar();mostrar([it]);$("res").querySelector("button[data-i]").click();
   }catch(e){lendo=false;msg("Não foi possível consultar o Open Food Facts. Verifique a ligação à internet e tente de novo.")}
 }
-$("b-scan").onclick=abrirScan;$("b-fechar").onclick=fechar;
+$("b-scan").onclick=()=>abrirScan();$("b-fechar").onclick=fechar;
 $("f-cod").onsubmit=e=>{e.preventDefault();lendo=true;procurarCodigo($("cod").value)};
 document.addEventListener("keydown",e=>{if(e.key=="Escape"&&!$("scan").hidden)fechar()});
 
