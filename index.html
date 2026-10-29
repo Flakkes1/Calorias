@@ -404,8 +404,8 @@ function achou(cod){
   try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}
   procurarCodigo(cod);
 }
-function naoEncontrado(cod,nome){
-  $("res").innerHTML=nome?`<p class="empty">Encontrei “${esc(nome)}” (código ${cod}) no Open Food Facts, mas sem valores nutricionais. Preencha-os manualmente abaixo.</p>`:`<p class="empty">O código ${cod} não existe no Open Food Facts. Pode adicioná-lo manualmente abaixo.</p>`;
+function naoEncontrado(cod,nome,campos){
+  $("res").innerHTML=nome?`<p class="empty">Encontrei “${esc(nome)}” (código ${cod}) no Open Food Facts, mas sem calorias nem macros que consiga usar${campos&&campos.length?" (só tem: "+campos.slice(0,8).join(", ")+")":""}. Preencha-os manualmente abaixo.</p>`:`<p class="empty">O código ${cod} não existe no Open Food Facts. Pode adicioná-lo manualmente abaixo.</p>`;
   if(nome)$("m-n").value=nome;
   $("det-man").open=true;$("res").scrollIntoView({block:"center"});
 }
@@ -432,9 +432,14 @@ async function procurarCodigo(cod){
   const pr=d.product,n=(pr&&pr.nutriments)||{};
   if(d.status!==1||!pr){fechar();naoEncontrado(cod);return}
   const nome=(pr.product_name||"Produto "+cod)+(pr.brands?" ("+pr.brands.split(",")[0]+")":"");
-  let k=n["energy-kcal_100g"];if(k==null&&n.energy_100g!=null)k=n.energy_100g/4.184;
-  if(k==null){fechar();naoEncontrado(cod,nome);return}
-  const it={nome,k:+k,p:+n.proteins_100g||0,h:+n.carbohydrates_100g||0,g:+n.fat_100g||0,src:"Open Food Facts",por:+pr.serving_quantity||100};
+  const v=x=>n[x]!=null&&n[x]!==""&&!isNaN(+n[x])?+n[x]:null;
+  let k=v("energy-kcal_100g"),est=false;
+  if(k==null){const kj=v("energy-kj_100g")??v("energy_100g");if(kj!=null)k=kj/4.184}
+  if(k==null&&v("energy-kcal_serving")!=null&&+pr.serving_quantity>0)k=v("energy-kcal_serving")/pr.serving_quantity*100;
+  const P=v("proteins_100g"),H=v("carbohydrates_100g"),G=v("fat_100g");
+  if(k==null&&(P!=null||H!=null||G!=null)){k=(P||0)*4+(H||0)*4+(G||0)*9;est=true}
+  if(k==null){fechar();naoEncontrado(cod,nome,Object.keys(n).filter(x=>x.endsWith("_100g")).map(x=>x.replace("_100g","")));return}
+  const it={nome:nome+(est?" (kcal estimadas)":""),k:+k,p:P||0,h:H||0,g:G||0,src:"Open Food Facts",por:+pr.serving_quantity||100};
   fechar();mostrar([it]);$("res").querySelector("button[data-i]").click();
 }
 $("b-scan").onclick=()=>abrirScan();$("b-fechar").onclick=fechar;
