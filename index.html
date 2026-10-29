@@ -404,23 +404,38 @@ function achou(cod){
   try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}
   procurarCodigo(cod);
 }
-function naoEncontrado(cod,semKcal){
-  $("res").innerHTML=`<p class="empty">${semKcal?"Este produto não tem calorias registadas":"Produto não encontrado"} no Open Food Facts (código ${cod}). Pode adicioná-lo manualmente abaixo.</p>`;
+function naoEncontrado(cod,nome){
+  $("res").innerHTML=nome?`<p class="empty">Encontrei “${esc(nome)}” (código ${cod}) no Open Food Facts, mas sem valores nutricionais. Preencha-os manualmente abaixo.</p>`:`<p class="empty">O código ${cod} não existe no Open Food Facts. Pode adicioná-lo manualmente abaixo.</p>`;
+  if(nome)$("m-n").value=nome;
   $("det-man").open=true;$("res").scrollIntoView({block:"center"});
+}
+async function lerOFF(cod){
+  let ultimo;
+  for(const host of ["world","pt"]){
+    const c=new AbortController(),t=setTimeout(()=>c.abort(),8000);
+    try{
+      const r=await fetch(`https://${host}.openfoodfacts.org/api/v2/product/${cod}.json?fields=product_name,brands,nutriments,serving_quantity`,{signal:c.signal});
+      clearTimeout(t);
+      if(r.ok||r.status==404)return await r.json();
+      ultimo=new Error("erro "+r.status);
+    }catch(e){clearTimeout(t);ultimo=e}
+  }
+  throw ultimo;
 }
 async function procurarCodigo(cod){
   cod=String(cod).replace(/\D/g,"");
   if(cod.length<8){lendo=false;msg("Escreva o código completo (8 a 13 números).");return}
-  parar();msg("A procurar "+cod+"…");
-  try{
-    const d=await(await fetch(`https://world.openfoodfacts.org/api/v2/product/${cod}.json?fields=product_name,brands,nutriments,serving_quantity`)).json();
-    const pr=d.product,n=pr&&pr.nutriments;
-    if(d.status!==1||!n){fechar();naoEncontrado(cod);return}
-    let k=n["energy-kcal_100g"];if(k==null&&n.energy_100g!=null)k=n.energy_100g/4.184;
-    if(k==null){fechar();naoEncontrado(cod,true);return}
-    const it={nome:(pr.product_name||"Produto "+cod)+(pr.brands?" ("+pr.brands.split(",")[0]+")":""),k:+k,p:+n.proteins_100g||0,h:+n.carbohydrates_100g||0,g:+n.fat_100g||0,src:"Open Food Facts",por:+pr.serving_quantity||100};
-    fechar();mostrar([it]);$("res").querySelector("button[data-i]").click();
-  }catch(e){lendo=false;msg("Não foi possível consultar o Open Food Facts. Verifique a ligação à internet e tente de novo.")}
+  parar();$("cod").value=cod;msg(`Código lido: ${cod}. A consultar o Open Food Facts…`);
+  let d;
+  try{d=await lerOFF(cod)}
+  catch(e){lendo=false;msg(`Código lido: ${cod}, mas o Open Food Facts não respondeu (${e.name=="AbortError"?"demorou demasiado":(e.message||"erro de ligação")}). Toque em Procurar para tentar de novo.`);return}
+  const pr=d.product,n=(pr&&pr.nutriments)||{};
+  if(d.status!==1||!pr){fechar();naoEncontrado(cod);return}
+  const nome=(pr.product_name||"Produto "+cod)+(pr.brands?" ("+pr.brands.split(",")[0]+")":"");
+  let k=n["energy-kcal_100g"];if(k==null&&n.energy_100g!=null)k=n.energy_100g/4.184;
+  if(k==null){fechar();naoEncontrado(cod,nome);return}
+  const it={nome,k:+k,p:+n.proteins_100g||0,h:+n.carbohydrates_100g||0,g:+n.fat_100g||0,src:"Open Food Facts",por:+pr.serving_quantity||100};
+  fechar();mostrar([it]);$("res").querySelector("button[data-i]").click();
 }
 $("b-scan").onclick=()=>abrirScan();$("b-fechar").onclick=fechar;
 $("f-cod").onsubmit=e=>{e.preventDefault();lendo=true;procurarCodigo($("cod").value)};
