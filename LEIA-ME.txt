@@ -23,10 +23,12 @@ Conteúdo
 3. Cópia de segurança
   No fim da página, "Exportar dados" cria um ficheiro .json e "Importar dados" restaura-o.
   Os registos ficam só no dispositivo; exporte de tempos a tempos.
+  Os produtos com código de barras adicionados manualmente também ficam guardados neste dispositivo.
+  Opcionalmente, pode contribuir esses dados para o catálogo público português do Open Food Facts usando a sua conta (utilizador/ID, não e-mail); a aplicação não guarda as credenciais.
 
 4. Atualizar a aplicação
   A aplicação verifica a página mais recente ao abrir e guarda-a para uso offline. Não precisa de reinstalar para receber alterações à interface.
   Incremente VERSAO em sw.js quando alterar outros ficheiros em cache ou o próprio comportamento da cache; depois volte a enviar os ficheiros.
   Se continuar a ver a versão antiga, feche e volte a abrir a aplicação. A instalação no ecrã principal não deve ser removida.
 
-Nota: as pesquisas no Open Food Facts e no USDA precisam de internet.
+Nota: as pesquisas no Open Food Facts e no USDA precisam de internet. A leitura de códigos consulta primeiro o catálogo português do Open Food Facts e depois o catálogo global.

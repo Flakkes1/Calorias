@@ -55,6 +55,7 @@ h2{font-size:1.08rem;margin:0 0 10px;color:var(--ink-soft)}
 @media(max-width:600px){
   #f-pesq button{width:100%}
 }
+#m-off-auth[hidden]{display:none}
 section{background:linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,.18));background-color:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow)}
 input,select,button{font:inherit;color:inherit}
 input,select{background:#1f1a17;border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0;color:var(--ink);transition:border-color .15s ease,box-shadow .15s ease,background .15s ease}
@@ -152,8 +153,15 @@ button{min-height:40px}
       <input id="m-q" type="number" min="1" step="any" placeholder="Qtd. g/ml" aria-label="Quantidade em gramas ou mililitros" style="width:90px">
       <input id="m-c" inputmode="numeric" placeholder="Código de barras (opcional)" aria-label="Código de barras" style="flex:1 1 180px">
       <select id="m-r" aria-label="Refeição"></select>
+      <label style="flex:1 1 100%"><input type="checkbox" id="m-off"> Contribuir este produto para o Open Food Facts</label>
+      <div id="m-off-auth" class="row" hidden style="flex:1 1 100%">
+        <input id="m-off-user" autocomplete="username" placeholder="Utilizador/ID Open Food Facts (não e-mail)" aria-label="Utilizador ou ID Open Food Facts, não e-mail" style="flex:1 1 180px">
+        <input id="m-off-pass" type="password" autocomplete="current-password" placeholder="Palavra-passe Open Food Facts" aria-label="Palavra-passe Open Food Facts" style="flex:1 1 180px">
+        <p class="note" style="flex:1 1 100%;margin:0">Envia o código, nome e valores nutricionais por 100 g para o catálogo público português. Use o seu utilizador/ID (não o e-mail). As credenciais são usadas apenas neste envio e não são guardadas pela aplicação.</p>
+      </div>
       <button>Adicionar</button>
     </form>
+    <p id="m-off-status" class="note" aria-live="polite"></p>
   </details>
   <details>
     <summary>Os meus produtos</summary>
@@ -355,14 +363,56 @@ function plano2(){plano()}
 
 function add(item){dia().push(item);save();render()}
 
-$("f-man").onsubmit=e=>{e.preventDefault();
+async function enviarParaOFF(produto,utilizador,palavraPasse){
+  const dados=new FormData();
+  dados.append("code",produto.cod);
+  dados.append("user_id",utilizador);
+  dados.append("password",palavraPasse);
+  dados.append("product_name",produto.nome);
+  dados.append("lc","pt");
+  dados.append("cc","pt");
+  dados.append("nutrition_data_per","100g");
+  dados.append("nutriment_energy-kcal",String(produto.k));
+  dados.append("nutriment_energy-kcal_unit","kcal");
+  [["proteins",produto.p],["carbohydrates",produto.h],["fat",produto.g]].forEach(([nome,valor])=>{
+    dados.append("nutriment_"+nome,String(valor));
+    dados.append("nutriment_"+nome+"_unit","g");
+  });
+  const resposta=await fetch("https://pt.openfoodfacts.org/cgi/product_jqm2.pl",{method:"POST",body:dados});
+  if(!resposta.ok)throw new Error(`resposta HTTP ${resposta.status}`);
+  const resultado=await resposta.json();
+  if(resultado.status!==1)throw new Error(resultado.status_verbose||"o Open Food Facts não aceitou os dados");
+}
+$("m-off").onchange=()=>{$("m-off-auth").hidden=!$("m-off").checked};
+$("f-man").onsubmit=async e=>{e.preventDefault();
   const p=+$("m-p").value||0,h=+$("m-h").value||0,g=+$("m-g").value||0;
   const k=$("m-k").value!==""?+$("m-k").value:p*4+h*4+g*9;
   if(!k&&!p&&!h&&!g){$("m-k").focus();return}
   const q=+$("m-q").value||0,cod=$("m-c").value.replace(/\D/g,"");
   if(cod&&!q){alert("Para guardar o produto com este código, indique a quantidade em g ou ml a que os valores se referem.");$("m-q").focus();return}
+  const contribuir=$("m-off").checked;
+  if(contribuir&&(!cod||!q)){alert("Para contribuir para o Open Food Facts, indique o código de barras e a quantidade dos valores nutricionais.");$("m-c").focus();return}
+  if(contribuir&&(!$("m-off-user").value.trim()||!$("m-off-pass").value)){alert("Indique o utilizador e a palavra-passe da sua conta Open Food Facts.");$("m-off-user").focus();return}
+  const produtoOFF=contribuir?{
+    cod,nome:$("m-n").value.trim(),k:k*100/q,p:p*100/q,h:h*100/q,g:g*100/q,
+    utilizador:$("m-off-user").value.trim(),palavraPasse:$("m-off-pass").value
+  }:null;
   if(cod){const f=100/q;S.produtos[cod]={nome:$("m-n").value,k:k*f,p:p*f,h:h*f,g:g*f,por:q};listaMeus()}
-  add({nome:$("m-n").value,k,p,h,g,gr:q||undefined,ref:+$("m-r").value});e.target.reset();$("m-r").value=1;};
+  add({nome:$("m-n").value,k,p,h,g,gr:q||undefined,ref:+$("m-r").value});
+  e.target.reset();$("m-r").value=1;$("m-off-auth").hidden=true;
+  $("m-off-status").textContent=contribuir?"Produto guardado neste dispositivo. A enviar contribuição…":"";
+  if(produtoOFF){
+    try{
+      await enviarParaOFF(produtoOFF,produtoOFF.utilizador,produtoOFF.palavraPasse);
+      $("m-off-status").textContent="Produto guardado neste dispositivo e enviado para o Open Food Facts.";
+    }catch(err){
+      $("m-off-status").textContent=`Produto guardado neste dispositivo, mas não foi possível enviá-lo para o Open Food Facts: ${err.message}.`;
+    }finally{
+      produtoOFF.palavraPasse="";
+      $("m-off-pass").value="";
+    }
+  }
+};
 function listaMeus(){
   const e=Object.entries(S.produtos||{});
   $("meus").innerHTML=e.length?e.map(([c,a])=>`<div class="item"><span>${esc(a.nome)} <small>${c} · ${Math.round(a.k)} kcal/100 g</small></span><button class="x" data-c="${c}" aria-label="Remover ${esc(a.nome)}">×</button></div>`).join(""):'<p class="note">Ainda não guardou nenhum produto.</p>';
@@ -464,16 +514,19 @@ function naoEncontrado(cod,nome,campos,existe){
   $("m-c").value=cod;$("det-man").open=true;$("res").scrollIntoView({block:"center"});
 }
 async function lerOFF(cod){
-  let ultimo;
-  for(const host of ["world","pt"]){
+  let ultimo,naoEncontrado=null;
+  for(const host of ["pt","world"]){
     const c=new AbortController(),t=setTimeout(()=>c.abort(),8000);
     try{
       const r=await fetch(`https://${host}.openfoodfacts.org/api/v2/product/${cod}.json?fields=product_name,brands,nutriments,serving_quantity`,{signal:c.signal});
-      clearTimeout(t);
-      if(r.ok||r.status==404)return await r.json();
-      ultimo=new Error("erro "+r.status);
-    }catch(e){clearTimeout(t);ultimo=e}
+      if(!r.ok&&r.status!==404){ultimo=new Error("erro "+r.status);continue}
+      const d=await r.json();
+      if(d.status===1&&d.product)return d;
+      naoEncontrado=d;
+    }catch(e){ultimo=e}
+    finally{clearTimeout(t)}
   }
+  if(naoEncontrado)return naoEncontrado;
   throw ultimo;
 }
 async function procurarCodigo(cod){
