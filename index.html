@@ -522,7 +522,13 @@ $("f-imp").onchange=async e=>{
 infoBk();
 
 // PWA: modo offline e armazenamento persistente
-if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
+  const tinhaControlador=!!navigator.serviceWorker.controller;
+  if(tinhaControlador)navigator.serviceWorker.addEventListener("controllerchange",()=>location.reload(),{once:true});
+  navigator.serviceWorker.register("sw.js",{updateViaCache:"none"})
+    .then(reg=>reg.update())
+    .catch(e=>console.warn("Não foi possível verificar atualizações da aplicação.",e));
+}
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 </script>
 </body>

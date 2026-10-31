@@ -25,6 +25,8 @@ Conteúdo
   Os registos ficam só no dispositivo; exporte de tempos a tempos.
 
 4. Atualizar a aplicação
-  Depois de alterar index.html, mude VERSAO em sw.js (por exemplo, calorias-v2) e volte a enviar os ficheiros.
+  Depois de alterar os ficheiros da aplicação, incremente VERSAO em sw.js e volte a enviar todos os ficheiros.
+  A aplicação verifica atualizações ao abrir e recarrega automaticamente quando uma nova versão é ativada.
+  Se continuar a ver a versão antiga, feche e volte a abrir a aplicação; no iPhone, pode também removê-la do ecrã principal e adicioná-la novamente.
 
 Nota: as pesquisas no Open Food Facts e no USDA precisam de internet.
