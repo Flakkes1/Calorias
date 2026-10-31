@@ -134,7 +134,8 @@ button{min-height:40px}
   <div id="sel">
     <b id="sel-nome"></b> <span class="note" id="sel-info"></span>
     <div class="row" style="margin-top:8px">
-      <input type="number" id="gr" value="100" min="1" style="width:90px" aria-label="Quantidade em gramas"> g
+      <input type="number" id="gr" value="100" min="0.1" step="any" style="width:90px" aria-label="Quantidade">
+      <span id="gr-unit">g</span>
       <select id="ref" aria-label="Refeição"></select>
       <button id="b-add">Adicionar</button>
       <button class="ghost" id="b-canc">Cancelar</button>
@@ -172,7 +173,7 @@ button{min-height:40px}
     <div class="row"><input id="chave" placeholder="Chave API (por omissão DEMO_KEY)" style="flex:1"></div>
     <p class="note">A DEMO_KEY tem limites baixos. Pode pedir uma chave gratuita em fdc.nal.usda.gov.</p>
   </details>
-  <p class="note">Valores por 100 g. A tabela local tem valores aproximados de alimentos comuns; confirme na tabela do INSA (portfir.insa.pt) se precisar de rigor. O Open Food Facts e o USDA precisam de ligação à internet e a página tem de estar aberta a partir do ficheiro descarregado.</p>
+  <p class="note">Os alimentos indicam valores por 100 g; os pratos identificados como “Estudo 2015” indicam valores por dose completa. A tabela local tem valores aproximados de alimentos comuns; lanches e pratos variam conforme a receita e o tamanho. Confirme na tabela do INSA (portfir.insa.pt) se precisar de rigor. O Open Food Facts e o USDA precisam de ligação à internet e a página tem de estar aberta a partir do ficheiro descarregado.</p>
 </section>
 </div>
 <section class="wk" aria-labelledby="h-plano"><h2 id="h-plano">Plano alimentar</h2>
@@ -214,8 +215,17 @@ const LOCAL=[
 ["Aveia em flocos",379,13,68,6.5],["Cerveja",43,.5,3.6,0],["Vinho tinto",85,.1,2.6,0],["Café sem açúcar",2,.1,0,0],
 ["Sopa de legumes",35,1,5,1.2],["Batata frita",312,3.4,41,15],["Pizza",266,11,33,10],
 ["Bacalhau à Brás",170,11,10,10,300],["Bacalhau com natas",190,10,10,12,300],["Bacalhau com todos",130,12,8,6,400],["Bacalhau assado com batatas",120,12,8,5,400],["Pataniscas de bacalhau",250,10,22,13,100],["Pastéis de bacalhau",230,11,22,11,80],["Arroz de pato",190,10,25,5,300],["Arroz de marisco",120,8,17,2.5,350],["Arroz de tomate",150,3,28,3,150],["Feijoada à portuguesa",130,8,9,7,350],["Cozido à portuguesa",150,13,6,8,450],["Francesinha",270,14,15,17,450],["Caldo verde",45,1.5,5,2,300],["Sopa de feijão",55,2.5,8,1.5,300],["Canja de galinha",40,3,4,1.5,300],["Sardinhas grelhadas",190,25,0,10,150],["Polvo à lagareiro",140,18,4,5,300],["Caldeirada de peixe",90,10,5,3,400],["Dourada grelhada",125,22,0,4,200],["Bifana no pão",250,17,20,11,170],["Prego no pão",260,16,22,12,180],["Tripas à moda do Porto",110,9,9,4,350],["Rojões",230,20,5,14,200],["Carne de porco à alentejana",190,16,5,12,350],["Iscas com elas",170,17,3,10,250],["Pica-pau",200,22,3,11,200],["Cabrito assado",220,27,0,12,200],["Ensopado de borrego",150,12,6,9,350],["Açorda alentejana",100,3,14,3.5,300],["Migas",200,5,20,11,200],["Feijão-frade com atum",120,9,14,3,250],["Salada russa",160,3,10,12,120],["Peixinhos da horta",250,5,25,14,100],["Rissol de camarão",280,8,26,16,70],["Croquete de carne",260,9,22,15,60],["Alheira assada",240,17,10,15,120],["Chouriço assado",330,20,2,27,60],["Presunto",250,30,0,14,40],["Queijo da Serra",380,22,1,32,40],["Queijo fresco",100,11,3,5,100],["Tosta mista",280,14,25,13,150],["Broa de milho",230,5,48,2,60],["Azeitonas",145,1,4,15,30],["Arroz doce",160,3,28,3.5,120],["Leite-creme",160,4,22,6,120],["Pudim flan",165,4.5,25,5,120],["Pão de ló",330,8,50,11,70],["Bolo de arroz",370,6,52,16,70],["Bola de Berlim",340,6,44,15,100],["Queijada de Sintra",320,7,45,12,60],
+["Pão com chouriço",350,13,42,14,150],["Pão com manteiga",340,8,47,13,70],["Pão com queijo",320,15,40,10,100],["Pão com fiambre",260,14,42,5,100],["Sandes de queijo e fiambre",290,15,34,10,150],["Sandes de atum",230,14,28,7,150],["Sandes de ovo",250,11,30,9,150],["Croissant misto",340,14,35,16,120],["Pão de Deus",350,8,50,13,70],["Empada de galinha",300,9,30,16,100],
 ["Pão integral",250,9,45,3.5],["Fiambre de peru",105,17,2,3],["Compota",250,0.4,62,0.1],["Mel",304,0.3,82,0],["Sumo de laranja",45,0.7,10,0.2],["Morangos",32,0.7,8,0.3],["Uvas",69,0.7,18,0.2],["Melancia",30,0.6,8,0.2],["Kiwi",61,1.1,15,0.5],["Pêssego",39,0.9,10,0.3],["Courgette",17,1.2,3,0.3],["Espinafres cozidos",23,3,3.8,0.3],["Grelos cozidos",25,2.5,3,0.4],["Pepino",15,0.7,3.6,0.1],["Ervilhas cozidas",80,5,14,0.4],["Lentilhas cozidas",116,9,20,0.4],["Favas cozidas",110,8,19,0.4],["Pescada cozida",90,19,0,1.5],["Robalo grelhado",125,23,0,3],["Carapau grelhado",150,23,0,6],["Cavala grelhada",205,19,0,14],["Peru grelhado",135,29,0,2],["Coxa de frango assada",200,25,0,11],["Ovo mexido",150,10,1.5,11],["Leite magro",35,3.4,5,0.1],["Iogurte grego",97,9,4,5],["Batata-doce cozida",90,1.6,21,0.1],["Cuscuz cozido",112,3.8,23,0.2],["Manteiga de amendoim",588,25,20,50],["Tofu",76,8,2,4.5],["Tremoços",119,16,10,3]
 ].map(a=>({nome:a[0],k:a[1],p:a[2],h:a[3],g:a[4],por:a[5],src:"Local"}));
+LOCAL.push(
+  {nome:"Arroz de lampreia",k:1249.79,p:45.20,h:51.93,g:92.16,por:1,base:"dose",src:"Estudo 2015"},
+  {nome:"Bacalhau com batata à murro",k:2135.38,p:78.43,h:71.63,g:168.24,por:1,base:"dose",src:"Estudo 2015"},
+  {nome:"Polvo com batata à murro",k:2207.37,p:83.82,h:71.63,g:173.85,por:1,base:"dose",src:"Estudo 2015"},
+  {nome:"Arroz de sarrabulho",k:1139.31,p:74.32,h:119.86,g:38.55,por:1,base:"dose",src:"Estudo 2015"},
+  {nome:"Rojões à Minhota",k:912.54,p:57.36,h:103.41,g:28.35,por:1,base:"dose",src:"Estudo 2015"},
+  {nome:"Francesinha (dose, estudo 2015)",k:952.53,p:53.98,h:51.26,g:58.03,por:1,base:"dose",src:"Estudo 2015"}
+);
 
 const $=id=>document.getElementById(id);
 let S={meta:2000,metap:100,peso:"",produtos:{},perfil:{sexo:"m",idade:"",altura:"",ativ:"1.375",obj:"manter"},dias:{},chave:""};
@@ -250,7 +260,7 @@ function render(){
     if(!it.length)return"";
     const sub=it.reduce((a,o)=>a+o.x.k,0);
     return`<div class="meal"><h3><span>${nome}</span><span>${Math.round(sub)} kcal</span></h3>`+
-      it.map(o=>`<div class="item"><span>${esc(o.x.nome)} <small>${o.x.gr?o.x.gr+" g":""}</small></span><span>${Math.round(o.x.k)} kcal<button class="x" data-del="${o.j}" aria-label="Remover ${esc(o.x.nome)}">×</button></span></div>`).join("")+`</div>`;
+      it.map(o=>`<div class="item"><span>${esc(o.x.nome)} <small>${o.x.unidade?o.x.quantidade+" "+esc(o.x.unidade):o.x.gr?o.x.gr+" g":""}</small></span><span>${Math.round(o.x.k)} kcal<button class="x" data-del="${o.j}" aria-label="Remover ${esc(o.x.nome)}">×</button></span></div>`).join("")+`</div>`;
   }).join("")||'<p class="empty">Ainda não adicionou nada neste dia. Pesquise um alimento ao lado.</p>';
 }
 
@@ -423,15 +433,17 @@ function mostrar(lista,aviso){
   const el=$("res");
   if(!lista.length){el.innerHTML=`<p class="empty">${aviso||"Sem resultados."}</p>`;return}
   el.innerHTML=(aviso?`<p class="note">${aviso}</p>`:"")+lista.map((a,i)=>
-    `<div class="res"><span>${esc(a.nome)}<span class="src">${a.src}</span><br><small class="note">${Math.round(a.k)} kcal · P ${r1(a.p)} · H ${r1(a.h)} · G ${r1(a.g)} (100 g)</small></span><button class="ghost" data-i="${i}">Escolher</button></div>`).join("");
+    `<div class="res"><span>${esc(a.nome)}<span class="src">${a.src}</span><br><small class="note">${Math.round(a.k)} kcal · P ${r1(a.p)} · H ${r1(a.h)} · G ${r1(a.g)} (${a.base==="dose"?"dose completa":"100 g"})</small></span><button class="ghost" data-i="${i}">Escolher</button></div>`).join("");
   el._l=lista;
 }
 $("res").onclick=e=>{const i=e.target.dataset.i;if(i===undefined)return;
-  sel=$("res")._l[+i];$("sel").style.display="block";$("gr").value=sel.por||100;$("sel-nome").textContent=sel.nome;
-  $("sel-info").textContent=`${Math.round(sel.k)} kcal/100 g`+(sel.por?` · porção habitual ${sel.por} g`:"");$("gr").focus();};
+  sel=$("res")._l[+i];$("sel").style.display="block";$("gr").value=sel.por||100;$("gr-unit").textContent=sel.base==="dose"?"dose":"g";
+  $("gr").setAttribute("aria-label",sel.base==="dose"?"Quantidade em doses":"Quantidade em gramas");
+  $("sel-nome").textContent=sel.nome;
+  $("sel-info").textContent=sel.base==="dose"?`${Math.round(sel.k)} kcal por dose completa`:`${Math.round(sel.k)} kcal/100 g`+(sel.por?` · porção habitual ${sel.por} g`:"");$("gr").focus();};
 $("b-canc").onclick=()=>{sel=null;$("sel").style.display="none"};
-$("b-add").onclick=()=>{if(!sel)return;const f=(+$("gr").value||100)/100;
-  add({nome:sel.nome,gr:+$("gr").value||100,k:sel.k*f,p:sel.p*f,h:sel.h*f,g:sel.g*f,ref:+$("ref").value});
+$("b-add").onclick=()=>{if(!sel)return;const q=+$("gr").value||(sel.base==="dose"?1:100),f=sel.base==="dose"?q:q/100;
+  add({nome:sel.nome,gr:sel.base==="dose"?undefined:q,quantidade:sel.base==="dose"?q:undefined,unidade:sel.base==="dose"?"dose":undefined,k:sel.k*f,p:sel.p*f,h:sel.h*f,g:sel.g*f,ref:+$("ref").value});
   sel=null;$("sel").style.display="none"};
 
 const norm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();

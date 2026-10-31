@@ -25,6 +25,7 @@ Conteúdo
   Os registos ficam só no dispositivo; exporte de tempos a tempos.
   Os produtos com código de barras adicionados manualmente também ficam guardados neste dispositivo.
   Opcionalmente, pode contribuir esses dados para o catálogo público português do Open Food Facts usando a sua conta (utilizador/ID, não e-mail); a aplicação não guarda as credenciais.
+  A tabela local inclui seis pratos da análise inicial (Tabela 10) do estudo de 2015 “Adequação nutricional de pratos típicos portugueses servidos em estabelecimentos de restauração da região do Minho e Douro Litoral”. Os valores são por dose completa, não por 100 g, e representam as receitas observadas nos restaurantes estudados antes das propostas de alteração nutricional.
 
 4. Atualizar a aplicação
   A aplicação verifica a página mais recente ao abrir e guarda-a para uso offline. Não precisa de reinstalar para receber alterações à interface.
