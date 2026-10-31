@@ -28,3 +28,4 @@ Conteúdo
   Depois de alterar index.html, mude VERSAO em sw.js (por exemplo, calorias-v2) e volte a enviar os ficheiros.
 
 Nota: as pesquisas no Open Food Facts e no USDA precisam de internet.
+Test
