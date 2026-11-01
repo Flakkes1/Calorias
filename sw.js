@@ -1,6 +1,6 @@
 // Service worker: guarda a aplicação para funcionar sem internet.
 // Navegações verificam a rede primeiro; a cache serve de alternativa offline.
-const VERSAO = "calorias-v16";
+const VERSAO = "calorias-v17";
 const FICHEIROS = ["./", "index.html", "manifest.webmanifest", "zxing.min.js", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
