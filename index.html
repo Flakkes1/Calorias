@@ -48,8 +48,6 @@ body{margin:0;background:radial-gradient(circle at top left,#3b2007 0%,#191714 2
 main{max-width:1020px;margin:0 auto;padding:20px 16px 60px}
 h1{font-size:clamp(1.8rem,2.8vw,2.4rem);margin:0 0 18px;letter-spacing:-.05em;font-weight:800}
 h2{font-size:1.08rem;margin:0 0 10px;color:var(--ink-soft)}
-.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px}
-@media(max-width:760px){.grid{grid-template-columns:1fr}}
 #f-pesq{align-items:stretch}
 #f-pesq #q{flex:1 0 100%;width:100%;min-height:54px;font-size:1.05rem}
 @media(max-width:600px){
@@ -94,6 +92,10 @@ button{min-height:40px}
 .item-actions{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 button.edit{min-height:32px;padding:4px 8px;font-size:.8rem}
 input.amount-edit{width:82px;padding:6px 8px}
+.tabs{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding:2px 2px 8px}
+.tabs .tab{flex:1 0 auto;white-space:nowrap;background:var(--chip);color:var(--ink-soft);border:1px solid var(--line);box-shadow:none}
+.tabs .tab[aria-selected="true"]{background:linear-gradient(135deg,#ffb347 0%,#ff7b00 52%,#ff9f1c 100%);color:#20140a;border-color:transparent}
+#panels>.tab-panel[hidden]{display:none}
 #scan{position:fixed;inset:0;z-index:50;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;text-align:center}
 #scan[hidden]{display:none}
 #scan .vw{position:relative;width:100%;max-width:520px}
@@ -106,7 +108,15 @@ input.amount-edit{width:82px;padding:6px 8px}
 <main>
 <h1>Controlo de calorias</h1>
 
-<div class="grid">
+<nav class="tabs" id="tabs" role="tablist" aria-label="Secções da aplicação">
+  <button class="tab" id="tab-dia" role="tab" aria-controls="painel-dia" aria-selected="true">O meu dia</button>
+  <button class="tab" id="tab-adicionar" role="tab" aria-controls="painel-adicionar" aria-selected="false" tabindex="-1">Adicionar</button>
+  <button class="tab" id="tab-plano" role="tab" aria-controls="painel-plano" aria-selected="false" tabindex="-1">Plano alimentar</button>
+  <button class="tab" id="tab-semana" role="tab" aria-controls="painel-semana" aria-selected="false" tabindex="-1">Últimos 7 dias</button>
+  <button class="tab" id="tab-copia" role="tab" aria-controls="painel-copia" aria-selected="false" tabindex="-1">Cópia de segurança</button>
+</nav>
+<div id="panels">
+<div class="tab-panel" id="painel-dia" role="tabpanel" aria-labelledby="tab-dia" tabindex="0">
 <section aria-labelledby="h-dia">
   <h2 id="h-dia">O meu dia</h2>
   <div class="top">
@@ -122,6 +132,8 @@ input.amount-edit{width:82px;padding:6px 8px}
   <div id="refeicoes"></div>
 </section>
 
+</div>
+<div class="tab-panel" id="painel-adicionar" role="tabpanel" aria-labelledby="tab-adicionar" tabindex="0" hidden>
 <section aria-labelledby="h-add">
   <h2 id="h-add">Adicionar alimento</h2>
   <form class="row" id="f-pesq">
@@ -179,6 +191,7 @@ input.amount-edit{width:82px;padding:6px 8px}
   <p class="note">Os alimentos indicam valores por 100 g; os pratos identificados como “Estudo 2015” indicam valores por dose completa. A tabela local tem valores aproximados de alimentos comuns; lanches e pratos variam conforme a receita e o tamanho. Confirme na tabela do INSA (portfir.insa.pt) se precisar de rigor. O Open Food Facts e o USDA precisam de ligação à internet e a página tem de estar aberta a partir do ficheiro descarregado.</p>
 </section>
 </div>
+<div class="tab-panel" id="painel-plano" role="tabpanel" aria-labelledby="tab-plano" tabindex="0" hidden>
 <section class="wk" aria-labelledby="h-plano"><h2 id="h-plano">Plano alimentar</h2>
   <div class="row" id="pf">
     <select id="sexo" aria-label="Sexo"><option value="m">Homem</option><option value="f">Mulher</option></select>
@@ -190,12 +203,18 @@ input.amount-edit{width:82px;padding:6px 8px}
   </div>
   <div id="plano"></div>
 </section>
+</div>
+<div class="tab-panel" id="painel-semana" role="tabpanel" aria-labelledby="tab-semana" tabindex="0" hidden>
 <section class="wk" aria-labelledby="h-sem"><h2 id="h-sem">Últimos 7 dias</h2><table><thead><tr><th>Dia</th><th>kcal</th><th>Proteína (g)</th></tr></thead><tbody id="sem"></tbody></table><p class="note" id="med"></p></section>
+</div>
+<div class="tab-panel" id="painel-copia" role="tabpanel" aria-labelledby="tab-copia" tabindex="0" hidden>
 <section class="wk" aria-labelledby="h-bk"><h2 id="h-bk">Cópia de segurança</h2>
   <div class="row"><button id="b-exp">Exportar dados</button><button class="ghost" id="b-imp">Importar dados</button><input type="file" id="f-imp" accept=".json,application/json" hidden></div>
   <p class="note" id="bk-info"></p>
   <p class="note">Os dados ficam guardados só neste dispositivo. Exporte de tempos a tempos para não os perder se limpar os dados do browser ou mudar de telemóvel. Ao importar, os dados atuais são substituídos.</p>
 </section>
+</div>
+</div>
 </main>
 <div id="scan" hidden role="dialog" aria-modal="true" aria-label="Leitor de código de barras">
   <p id="scan-msg" aria-live="polite">Aponte a câmara ao código de barras do produto.</p>
@@ -252,6 +271,23 @@ function quantidadeUsual(nome,unidade,por){
   const q=+S.quantidades[chaveQuantidade(nome,unidade)];
   return Number.isFinite(q)&&q>0?q:por;
 }
+function ativarSeparador(tab){
+  document.querySelectorAll("#tabs [role=tab]").forEach(t=>{
+    const ativo=t===tab;
+    t.setAttribute("aria-selected",String(ativo));t.tabIndex=ativo?0:-1;
+    $(t.getAttribute("aria-controls")).hidden=!ativo;
+  });
+}
+$("tabs").addEventListener("click",e=>{
+  const tab=e.target.closest('[role="tab"]');if(tab)ativarSeparador(tab);
+});
+$("tabs").addEventListener("keydown",e=>{
+  const tabs=[...$("tabs").querySelectorAll('[role="tab"]')],i=tabs.indexOf(e.target.closest('[role="tab"]'));
+  if(i<0)return;
+  const prox=e.key==="ArrowRight"?(i+1)%tabs.length:e.key==="ArrowLeft"?(i-1+tabs.length)%tabs.length:e.key==="Home"?0:e.key==="End"?tabs.length-1:-1;
+  if(prox<0)return;
+  e.preventDefault();tabs[prox].focus();ativarSeparador(tabs[prox]);
+});
 
 function render(){
   const L=dia();let t=0,p=0,h=0,g=0;
