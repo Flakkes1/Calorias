@@ -322,7 +322,7 @@ function render(){
     if(!it.length)return"";
     const sub=it.reduce((a,o)=>a+o.x.k,0);
     return`<div class="meal"><h3><span>${nome}</span><span>${Math.round(sub)} kcal</span></h3>`+
-      it.map(o=>`<div class="item"><span>${esc(o.x.nome)} <small>${o.x.unidade?o.x.quantidade+" "+esc(o.x.unidade):o.x.gr?o.x.gr+" g":""}</small></span><span class="item-actions">${editando===o.j?`<input class="amount-edit" type="number" min="0.01" step="any" data-amount="${o.j}" value="${esc(String(o.x.unidade?o.x.quantidade:o.x.gr||""))}" aria-label="Nova quantidade em ${o.x.unidade?esc(o.x.unidade):"gramas"}"><small>${o.x.unidade?esc(o.x.unidade):"g"}</small><button class="ghost edit" data-save="${o.j}">Guardar</button><button class="x" data-cancel="${o.j}" aria-label="Cancelar edição">×</button>`:`<span>${Math.round(o.x.k)} kcal</span><button class="ghost edit" data-edit="${o.j}" aria-label="Editar quantidade de ${esc(o.x.nome)}">Editar</button><button class="x" data-del="${o.j}" aria-label="Remover ${esc(o.x.nome)}">×</button>`}</span></div>`).join("")+`</div>`;
+      it.map(o=>`<div class="item"><span>${esc(o.x.nome)} <small>${o.x.unidade?o.x.quantidade+" "+esc(o.x.unidade):o.x.gr?o.x.gr+" g":""}</small></span><span class="item-actions">${editando===o.j?`<input class="amount-edit" type="text" inputmode="decimal" data-amount="${o.j}" value="${esc(String(o.x.unidade?o.x.quantidade:o.x.gr||""))}" aria-label="Nova quantidade em ${o.x.unidade?esc(o.x.unidade):"gramas"}"><small>${o.x.unidade?esc(o.x.unidade):"g"}</small><button class="ghost edit" data-save="${o.j}">Guardar</button><button class="x" data-cancel="${o.j}" aria-label="Cancelar edição">×</button>`:`<span>${Math.round(o.x.k)} kcal</span><button class="ghost edit" data-edit="${o.j}" aria-label="Editar quantidade de ${esc(o.x.nome)}">Editar</button><button class="x" data-del="${o.j}" aria-label="Remover ${esc(o.x.nome)}">×</button>`}</span></div>`).join("")+`</div>`;
   }).join("")||'<p class="empty">Ainda não adicionou nada neste dia. Pesquise um alimento ao lado.</p>';
 }
 
@@ -330,7 +330,8 @@ $("refeicoes").onclick=e=>{
   const t=e.target;
   if(t.dataset.edit!==undefined){
     editando=+t.dataset.edit;render();
-    $("refeicoes").querySelector("[data-amount]").focus();return;
+    const campo=$("refeicoes").querySelector("[data-amount]");
+    campo.focus();campo.setSelectionRange(campo.value.length,campo.value.length);return;
   }
   if(t.dataset.cancel!==undefined){editando=null;render();return}
   if(t.dataset.save!==undefined){
