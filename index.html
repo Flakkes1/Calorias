@@ -84,6 +84,11 @@ button.x{background:none;border:none;color:var(--mut);padding:2px 8px;font-size:
 details{margin-top:12px}
 details summary{cursor:pointer;color:#ffb347;font-weight:700}
 details .row{margin-top:8px}
+#foto-preview{display:block;max-width:100%;max-height:280px;margin-top:8px;border-radius:10px}
+#foto-preview[hidden]{display:none}
+#foto-camera{position:fixed;inset:0;z-index:60;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;text-align:center}
+#foto-camera[hidden]{display:none}
+#foto-camera video{width:100%;max-width:520px;max-height:65vh;border-radius:10px;background:#111;object-fit:cover}
 #res{margin-top:12px}
 table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--line)}th:first-child,td:first-child{text-align:left}td.ok{color:var(--ok);font-weight:600}
 .bar.p i{background:linear-gradient(90deg,#ffcf70,#ff8a1d)}section.wk{margin-top:16px}
@@ -133,6 +138,23 @@ button{min-height:40px}
   </div>
   <div id="sel">
     <b id="sel-nome"></b> <span class="note" id="sel-info"></span>
+    <details id="det-foto">
+      <summary>Estimar peso com a câmara</summary>
+      <p class="note">Tire uma fotografia e compare visualmente a porção com as opções. A imagem não é analisada automaticamente nem enviada; o peso é aproximado. Pode ajustá-lo abaixo.</p>
+      <div class="row">
+        <button type="button" class="ghost" id="b-foto-camera">Tirar fotografia</button>
+      </div>
+      <img id="foto-preview" alt="Pré-visualização da fotografia da porção" hidden>
+      <div class="row">
+        <label>Porção na fotografia
+          <select id="foto-porcao" aria-label="Tamanho visual aproximado da porção">
+            <option value="">Escolha uma porção</option>
+          </select>
+        </label>
+        <button type="button" class="ghost" id="b-foto-estimar">Aplicar estimativa</button>
+      </div>
+      <p class="note" id="foto-msg" role="status">A fotografia fica apenas neste dispositivo.</p>
+    </details>
     <div class="row" style="margin-top:8px">
       <input type="number" id="gr" value="100" min="0.1" step="any" style="width:90px" aria-label="Quantidade">
       <span id="gr-unit">g</span>
@@ -194,6 +216,15 @@ button{min-height:40px}
   <p class="note">Os dados ficam guardados só neste dispositivo. Exporte de tempos a tempos para não os perder se limpar os dados do browser ou mudar de telemóvel. Ao importar, os dados atuais são substituídos.</p>
 </section>
 </main>
+<div id="foto-camera" hidden role="dialog" aria-modal="true" aria-labelledby="foto-camera-titulo">
+  <h2 id="foto-camera-titulo">Fotografar a porção</h2>
+  <video id="foto-video" autoplay playsinline></video>
+  <p id="foto-camera-msg" role="status">A preparar a câmara…</p>
+  <div class="row">
+    <button type="button" id="b-foto-capturar">Tirar fotografia</button>
+    <button type="button" class="ghost" id="b-foto-fechar">Fechar câmara</button>
+  </div>
+</div>
 <div id="scan" hidden role="dialog" aria-modal="true" aria-label="Leitor de código de barras">
   <p id="scan-msg" aria-live="polite">Aponte a câmara ao código de barras do produto.</p>
   <div class="vw"><video id="scan-v" playsinline muted></video></div>
@@ -234,6 +265,8 @@ const save=()=>{try{localStorage.setItem("calorias-v1",JSON.stringify(S))}catch(
 const hoje=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
 const r1=n=>Math.round(n*10)/10;
 let sel=null;
+let fotoUrl=null;
+let fotoCapturada=false;
 
 ["ref","m-r"].forEach(id=>$(id).innerHTML=REFS.map((r,i)=>`<option value="${i}">${r}</option>`).join(""));
 function aplicar(){$("data").value=hoje();$("meta").value=S.meta;$("metap").value=S.metap;$("peso").value=S.peso;Object.keys(S.perfil).forEach(k=>$(k).value=S.perfil[k]);$("chave").value=S.chave||""}
@@ -437,14 +470,81 @@ function mostrar(lista,aviso){
   el._l=lista;
 }
 $("res").onclick=e=>{const i=e.target.dataset.i;if(i===undefined)return;
+  limparFoto();$("det-foto").open=false;
   sel=$("res")._l[+i];$("sel").style.display="block";$("gr").value=sel.por||100;$("gr-unit").textContent=sel.base==="dose"?"dose":"g";
   $("gr").setAttribute("aria-label",sel.base==="dose"?"Quantidade em doses":"Quantidade em gramas");
-  $("sel-nome").textContent=sel.nome;
+  $("sel-nome").textContent=sel.nome;$("det-foto").hidden=sel.base==="dose";
+  if(sel.base!=="dose"){
+    const por=+sel.por>0?+sel.por:100;
+    const base=+sel.por>0?"Habitual":"Referência (base de 100 g)";
+    $("foto-porcao").innerHTML='<option value="">Escolha uma porção</option>'+[[.5,"Pequena (cerca de metade)"],[1,base],[1.5,"Grande (cerca de 1,5 porções)"],[2,"Muito grande (cerca de 2 porções)"]].map(([f,n])=>`<option value="${por*f}">${n} · ≈ ${Math.round(por*f)} g</option>`).join("");
+    $("foto-porcao").value="";
+  }
   $("sel-info").textContent=sel.base==="dose"?`${Math.round(sel.k)} kcal por dose completa`:`${Math.round(sel.k)} kcal/100 g`+(sel.por?` · porção habitual ${sel.por} g`:"");$("gr").focus();};
-$("b-canc").onclick=()=>{sel=null;$("sel").style.display="none"};
+function limparFoto(){
+  fecharFotoCamera();
+  if(fotoUrl){URL.revokeObjectURL(fotoUrl);fotoUrl=null}
+  fotoCapturada=false;$("foto-preview").removeAttribute("src");$("foto-preview").hidden=true;
+  $("foto-msg").textContent="A fotografia fica apenas neste dispositivo.";
+  $("foto-porcao").value="";
+}
+let fotoStream=null;
+function fecharFotoCamera(){
+  if(fotoStream){fotoStream.getTracks().forEach(t=>t.stop());fotoStream=null}
+  $("foto-video").srcObject=null;$("foto-camera").hidden=true;
+}
+async function abrirFotoCamera(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    $("foto-msg").textContent="A câmara não está disponível. Abra a aplicação num endereço HTTPS e permita o acesso à câmara.";
+    return;
+  }
+  $("foto-camera").hidden=false;$("foto-camera-msg").textContent="A preparar a câmara…";
+  try{
+    fotoStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
+    $("foto-video").srcObject=fotoStream;await $("foto-video").play();
+    $("foto-camera-msg").textContent="Enquadre a porção e tire a fotografia.";
+    $("b-foto-capturar").focus();
+  }catch(err){
+    fecharFotoCamera();
+    $("foto-msg").textContent=err&&err.name==="NotAllowedError"?"Sem permissão para usar a câmara. Autorize-a nas definições do browser.":"Não foi possível abrir a câmara. Confirme as permissões e tente novamente.";
+  }
+}
+$("b-foto-camera").onclick=abrirFotoCamera;
+$("b-foto-fechar").onclick=fecharFotoCamera;
+$("b-foto-capturar").onclick=()=>{
+  const video=$("foto-video");
+  if(!fotoStream||!video.videoWidth||!video.videoHeight){
+    $("foto-camera-msg").textContent="A câmara ainda não está pronta. Aguarde um momento.";
+    return;
+  }
+  const canvas=document.createElement("canvas");
+  canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+  const contexto=canvas.getContext("2d");
+  if(!contexto){$("foto-camera-msg").textContent="Não foi possível preparar a fotografia. Tente novamente.";return}
+  contexto.drawImage(video,0,0,canvas.width,canvas.height);
+  canvas.toBlob(blob=>{
+    if(!blob){
+      $("foto-camera-msg").textContent="Não foi possível captar a fotografia. Tente novamente.";
+      return;
+    }
+    if(fotoUrl)URL.revokeObjectURL(fotoUrl);
+    fotoUrl=URL.createObjectURL(blob);fotoCapturada=true;
+    $("foto-preview").src=fotoUrl;$("foto-preview").hidden=false;
+    $("foto-msg").textContent="Fotografia captada. Compare a porção e escolha o tamanho aproximado.";
+    fecharFotoCamera();
+    $("foto-porcao").focus();
+  },"image/jpeg",.85);
+};
+$("b-foto-estimar").onclick=()=>{
+  const gr=+$("foto-porcao").value;
+  if(!fotoCapturada){$("foto-msg").textContent="Tire uma fotografia primeiro.";return}
+  if(!(gr>0)){$("foto-msg").textContent="Escolha o tamanho visual da porção.";return}
+  $("gr").value=Math.round(gr);$("foto-msg").textContent="Estimativa aplicada. Ajuste os gramas se necessário.";
+};
+$("b-canc").onclick=()=>{sel=null;$("sel").style.display="none";limparFoto()};
 $("b-add").onclick=()=>{if(!sel)return;const q=+$("gr").value||(sel.base==="dose"?1:100),f=sel.base==="dose"?q:q/100;
   add({nome:sel.nome,gr:sel.base==="dose"?undefined:q,quantidade:sel.base==="dose"?q:undefined,unidade:sel.base==="dose"?"dose":undefined,k:sel.k*f,p:sel.p*f,h:sel.h*f,g:sel.g*f,ref:+$("ref").value});
-  sel=null;$("sel").style.display="none"};
+  sel=null;$("sel").style.display="none";limparFoto()};
 
 const norm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 
@@ -545,7 +645,7 @@ async function procurarCodigo(cod){
   cod=String(cod).replace(/\D/g,"");
   if(cod.length<8){lendo=false;msg("Escreva o código completo (8 a 13 números).");return}
   const meu=(S.produtos||{})[cod];
-  if(meu){fechar();mostrar([{...meu,src:"Os meus produtos"}]);$("res").querySelector("button[data-i]").click();return}
+  if(meu){fechar();mostrar([{...meu,src:"Os meus produtos"}]);$("res").querySelector("button[data-i]").click();$("det-foto").open=true;return}
   parar();$("cod").value=cod;msg(`Código lido: ${cod}. A consultar o Open Food Facts…`);
   let d;
   try{d=await lerOFF(cod)}
@@ -561,11 +661,14 @@ async function procurarCodigo(cod){
   if(k==null&&(P!=null||H!=null||G!=null)){k=(P||0)*4+(H||0)*4+(G||0)*9;est=true}
   if(k==null){fechar();naoEncontrado(cod,pr.product_name?nome:"",Object.keys(n).filter(x=>x.endsWith("_100g")).map(x=>x.replace("_100g","")),true);return}
   const it={nome:nome+(est?" (kcal estimadas)":""),k:+k,p:P||0,h:H||0,g:G||0,src:"Open Food Facts",por:+pr.serving_quantity||100};
-  fechar();mostrar([it]);$("res").querySelector("button[data-i]").click();
+  fechar();mostrar([it]);$("res").querySelector("button[data-i]").click();$("det-foto").open=true;
 }
 $("b-scan").onclick=()=>abrirScan();$("b-fechar").onclick=fechar;
 $("f-cod").onsubmit=e=>{e.preventDefault();lendo=true;procurarCodigo($("cod").value)};
-document.addEventListener("keydown",e=>{if(e.key=="Escape"&&!$("scan").hidden)fechar()});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&!$("foto-camera").hidden){fecharFotoCamera();return}
+  if(e.key==="Escape"&&!$("scan").hidden)fechar();
+});
 
 // Cópia de segurança
 function infoBk(){$("bk-info").textContent=S.backup?"Última cópia de segurança: "+new Date(S.backup).toLocaleString("pt-PT"):"Ainda não fez nenhuma cópia de segurança."}
