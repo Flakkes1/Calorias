@@ -233,6 +233,7 @@ LOCAL.push(
 const $=id=>document.getElementById(id);
 let S={meta:2000,metap:100,peso:"",produtos:{},perfil:{sexo:"m",idade:"",altura:"",ativ:"1.375",obj:"manter"},dias:{},chave:""};
 try{const t=localStorage.getItem("calorias-v1");if(t)S=Object.assign(S,JSON.parse(t))}catch(e){}
+S.quantidades=S.quantidades&&typeof S.quantidades=="object"&&!Array.isArray(S.quantidades)?S.quantidades:{};
 const save=()=>{try{localStorage.setItem("calorias-v1",JSON.stringify(S))}catch(e){}};
 const hoje=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
 const r1=n=>Math.round(n*10)/10;
@@ -245,6 +246,12 @@ aplicar();
 
 function dia(){return S.dias[$("data").value]||(S.dias[$("data").value]=[])}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+const norm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const chaveQuantidade=(nome,unidade)=>`${norm(nome)}|${unidade}`;
+function quantidadeUsual(nome,unidade,por){
+  const q=+S.quantidades[chaveQuantidade(nome,unidade)];
+  return Number.isFinite(q)&&q>0?q:por;
+}
 
 function render(){
   const L=dia();let t=0,p=0,h=0,g=0;
@@ -284,7 +291,9 @@ $("refeicoes").onclick=e=>{
     if(!Number.isFinite(quantidade)||quantidade<=0){alert("Indique uma quantidade válida maior que zero.");return}
     const fator=quantidade/atual;
     ["k","p","h","g"].forEach(c=>{if(Number.isFinite(+item[c]))item[c]=+item[c]*fator});
-    item[campo]=quantidade;editando=null;
+    item[campo]=quantidade;
+    S.quantidades[chaveQuantidade(item.nome,dose?item.unidade:"g")]=quantidade;
+    editando=null;
     save();render();return;
   }
   const remover=t.dataset.del;
@@ -396,7 +405,11 @@ $("plano").onclick=e=>{const t=e.target;
   if(t.dataset.reg!==undefined){const i=+t.dataset.reg;PM[i].forEach(x=>dia().push({...x,ref:i}));save();render()}};
 function plano2(){plano()}
 
-function add(item){dia().push(item);save();render()}
+function add(item){
+  const quantidade=item.unidade?item.quantidade:item.gr;
+  if(Number.isFinite(+quantidade)&&+quantidade>0)S.quantidades[chaveQuantidade(item.nome,item.unidade||"g")]=+quantidade;
+  dia().push(item);save();render();
+}
 
 async function enviarParaOFF(produto,utilizador,palavraPasse){
   const dados=new FormData();
@@ -419,6 +432,10 @@ async function enviarParaOFF(produto,utilizador,palavraPasse){
   if(resultado.status!==1)throw new Error(resultado.status_verbose||"o Open Food Facts não aceitou os dados");
 }
 $("m-off").onchange=()=>{$("m-off-auth").hidden=!$("m-off").checked};
+$("m-n").onchange=()=>{
+  const q=S.quantidades[chaveQuantidade($("m-n").value.trim(),"g")];
+  if(+$("m-q").value<=0&&Number.isFinite(+q)&&+q>0)$("m-q").value=q;
+};
 $("f-man").onsubmit=async e=>{e.preventDefault();
   const p=+$("m-p").value||0,h=+$("m-h").value||0,g=+$("m-g").value||0;
   const k=$("m-k").value!==""?+$("m-k").value:p*4+h*4+g*9;
@@ -462,7 +479,7 @@ function mostrar(lista,aviso){
   el._l=lista;
 }
 $("res").onclick=e=>{const i=e.target.dataset.i;if(i===undefined)return;
-  sel=$("res")._l[+i];$("sel").style.display="block";$("gr").value=sel.por||100;$("gr-unit").textContent=sel.base==="dose"?"dose":"g";
+  sel=$("res")._l[+i];$("sel").style.display="block";const unidade=sel.base==="dose"?"dose":"g";$("gr").value=quantidadeUsual(sel.nome,unidade,sel.por||(unidade==="dose"?1:100));$("gr-unit").textContent=unidade;
   $("gr").setAttribute("aria-label",sel.base==="dose"?"Quantidade em doses":"Quantidade em gramas");
   $("sel-nome").textContent=sel.nome;
   $("sel-info").textContent=sel.base==="dose"?`${Math.round(sel.k)} kcal por dose completa`:`${Math.round(sel.k)} kcal/100 g`+(sel.por?` · porção habitual ${sel.por} g`:"");$("gr").focus();};
@@ -470,8 +487,6 @@ $("b-canc").onclick=()=>{sel=null;$("sel").style.display="none"};
 $("b-add").onclick=()=>{if(!sel)return;const q=+$("gr").value||(sel.base==="dose"?1:100),f=sel.base==="dose"?q:q/100;
   add({nome:sel.nome,gr:sel.base==="dose"?undefined:q,quantidade:sel.base==="dose"?q:undefined,unidade:sel.base==="dose"?"dose":undefined,k:sel.k*f,p:sel.p*f,h:sel.h*f,g:sel.g*f,ref:+$("ref").value});
   sel=null;$("sel").style.display="none"};
-
-const norm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 
 async function pOFF(q){
   const u="https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=12&cc=pt&lc=pt&fields=product_name,brands,nutriments&search_terms="+encodeURIComponent(q);
@@ -611,7 +626,7 @@ $("f-imp").onchange=async e=>{
     const dias={};
     for(const[k,v]of Object.entries(d.dias))if(Array.isArray(v))dias[k]=v.filter(x=>x&&typeof x.nome=="string"&&isFinite(x.k));
     if(!confirm(`Importar ${Object.keys(dias).length} dia(s) de registos? Os dados atuais serão substituídos.`))return;
-    S={...S,meta:+d.meta||2000,metap:+d.metap||0,peso:d.peso||"",perfil:{...S.perfil,...(d.perfil||{})},dias,produtos:(d.produtos&&typeof d.produtos=="object")?d.produtos:{}};
+    S={...S,meta:+d.meta||2000,metap:+d.metap||0,peso:d.peso||"",perfil:{...S.perfil,...(d.perfil||{})},dias,produtos:(d.produtos&&typeof d.produtos=="object")?d.produtos:{},quantidades:(d.quantidades&&typeof d.quantidades=="object"&&!Array.isArray(d.quantidades))?d.quantidades:S.quantidades};
     save();PV=[0,0,0,0];aplicar();plano();render();infoBk();alert("Dados importados.");
   }catch(err){alert("Ficheiro inválido. Escolha uma cópia de segurança exportada por esta aplicação.")}
 };
