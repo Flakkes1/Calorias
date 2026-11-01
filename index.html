@@ -91,6 +91,9 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:6px 8px
 summary{cursor:pointer;color:#ffb347}
 main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));padding-top:max(20px,env(safe-area-inset-top));padding-bottom:max(60px,env(safe-area-inset-bottom))}
 button{min-height:40px}
+.item-actions{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+button.edit{min-height:32px;padding:4px 8px;font-size:.8rem}
+input.amount-edit{width:82px;padding:6px 8px}
 #scan{position:fixed;inset:0;z-index:50;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;text-align:center}
 #scan[hidden]{display:none}
 #scan .vw{position:relative;width:100%;max-width:520px}
@@ -234,6 +237,7 @@ const save=()=>{try{localStorage.setItem("calorias-v1",JSON.stringify(S))}catch(
 const hoje=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
 const r1=n=>Math.round(n*10)/10;
 let sel=null;
+let editando=null;
 
 ["ref","m-r"].forEach(id=>$(id).innerHTML=REFS.map((r,i)=>`<option value="${i}">${r}</option>`).join(""));
 function aplicar(){$("data").value=hoje();$("meta").value=S.meta;$("metap").value=S.metap;$("peso").value=S.peso;Object.keys(S.perfil).forEach(k=>$(k).value=S.perfil[k]);$("chave").value=S.chave||""}
@@ -260,11 +264,32 @@ function render(){
     if(!it.length)return"";
     const sub=it.reduce((a,o)=>a+o.x.k,0);
     return`<div class="meal"><h3><span>${nome}</span><span>${Math.round(sub)} kcal</span></h3>`+
-      it.map(o=>`<div class="item"><span>${esc(o.x.nome)} <small>${o.x.unidade?o.x.quantidade+" "+esc(o.x.unidade):o.x.gr?o.x.gr+" g":""}</small></span><span>${Math.round(o.x.k)} kcal<button class="x" data-del="${o.j}" aria-label="Remover ${esc(o.x.nome)}">×</button></span></div>`).join("")+`</div>`;
+      it.map(o=>`<div class="item"><span>${esc(o.x.nome)} <small>${o.x.unidade?o.x.quantidade+" "+esc(o.x.unidade):o.x.gr?o.x.gr+" g":""}</small></span><span class="item-actions">${editando===o.j?`<input class="amount-edit" type="number" min="0.01" step="any" data-amount="${o.j}" value="${esc(String(o.x.unidade?o.x.quantidade:o.x.gr||""))}" aria-label="Nova quantidade em ${o.x.unidade?esc(o.x.unidade):"gramas"}"><small>${o.x.unidade?esc(o.x.unidade):"g"}</small><button class="ghost edit" data-save="${o.j}">Guardar</button><button class="x" data-cancel="${o.j}" aria-label="Cancelar edição">×</button>`:`<span>${Math.round(o.x.k)} kcal</span><button class="ghost edit" data-edit="${o.j}" aria-label="Editar quantidade de ${esc(o.x.nome)}">Editar</button><button class="x" data-del="${o.j}" aria-label="Remover ${esc(o.x.nome)}">×</button>`}</span></div>`).join("")+`</div>`;
   }).join("")||'<p class="empty">Ainda não adicionou nada neste dia. Pesquise um alimento ao lado.</p>';
 }
 
-$("refeicoes").onclick=e=>{const j=e.target.dataset.del;if(j!==undefined){dia().splice(+j,1);save();render()}};
+$("refeicoes").onclick=e=>{
+  const t=e.target;
+  if(t.dataset.edit!==undefined){
+    editando=+t.dataset.edit;render();
+    $("refeicoes").querySelector("[data-amount]").focus();return;
+  }
+  if(t.dataset.cancel!==undefined){editando=null;render();return}
+  if(t.dataset.save!==undefined){
+    const j=+t.dataset.save,item=dia()[j];
+    if(!item)return;
+    const dose=!!item.unidade,campo=dose?"quantidade":"gr",atual=+item[campo];
+    const quantidade=Number($("refeicoes").querySelector(`[data-amount="${j}"]`).value.trim().replace(",","."));
+    if(!Number.isFinite(atual)||atual<=0){alert("Não é possível editar a quantidade deste registo.");return}
+    if(!Number.isFinite(quantidade)||quantidade<=0){alert("Indique uma quantidade válida maior que zero.");return}
+    const fator=quantidade/atual;
+    ["k","p","h","g"].forEach(c=>{if(Number.isFinite(+item[c]))item[c]=+item[c]*fator});
+    item[campo]=quantidade;editando=null;
+    save();render();return;
+  }
+  const remover=t.dataset.del;
+  if(remover!==undefined){dia().splice(+remover,1);save();render()}
+};
 $("data").onchange=render;
 $("meta").onchange=()=>{S.meta=+$("meta").value||2000;save();render()};
 $("metap").onchange=()=>{S.metap=+$("metap").value||0;save();render()};
