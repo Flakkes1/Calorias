@@ -26,7 +26,6 @@ Conteúdo
   Os produtos com código de barras adicionados manualmente também ficam guardados neste dispositivo.
   Opcionalmente, pode contribuir esses dados para o catálogo público português do Open Food Facts usando a sua conta (utilizador/ID, não e-mail); a aplicação não guarda as credenciais.
   A tabela local inclui seis pratos da análise inicial (Tabela 10) do estudo de 2015 “Adequação nutricional de pratos típicos portugueses servidos em estabelecimentos de restauração da região do Minho e Douro Litoral”. Os valores são por dose completa, não por 100 g, e representam as receitas observadas nos restaurantes estudados antes das propostas de alteração nutricional.
-  Ao escolher um alimento pesquisado ou identificar um produto pelo código de barras, pode abrir “Estimar peso com a câmara”, tirar uma fotografia e escolher visualmente uma porção aproximada. Para produtos identificados pelo código, esta opção abre-se automaticamente. A imagem não é analisada automaticamente nem enviada; confirme e ajuste os gramas antes de adicionar o alimento. A câmara precisa de permissão e de uma ligação HTTPS.
 
 4. Atualizar a aplicação
   A aplicação verifica a página mais recente ao abrir e guarda-a para uso offline. Não precisa de reinstalar para receber alterações à interface.
