@@ -90,9 +90,10 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:6px 8px
 summary{cursor:pointer;color:#ffb347}
 main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));padding-top:max(20px,env(safe-area-inset-top));padding-bottom:max(60px,env(safe-area-inset-bottom))}
 button{min-height:40px}
-.item-actions{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.item-actions{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-wrap:wrap;justify-content:flex-end}
 button.edit{min-height:32px;padding:4px 8px;font-size:.8rem}
 input.amount-edit{width:82px;padding:6px 8px}
+.item-actions select.meal-edit{max-width:145px;padding:5px 6px;font-size:.8rem}
 .tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:16px;padding:2px 2px 8px}
 .tabs .tab{display:grid;place-items:center;min-width:0;min-height:48px;padding:8px;background:var(--chip);color:var(--ink-soft);border:1px solid var(--line);box-shadow:none}
 .tabs .tab svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -159,6 +160,7 @@ input.amount-edit{width:82px;padding:6px 8px}
     <div class="row" style="margin-top:8px">
       <input type="number" id="gr" value="100" min="0.1" step="any" style="width:90px" aria-label="Quantidade">
       <span id="gr-unit">g</span>
+      <span id="gr-kcal" class="note" aria-live="polite"></span>
       <select id="ref" aria-label="Refeição"></select>
       <button id="b-add">Adicionar</button>
       <button class="ghost" id="b-canc">Cancelar</button>
@@ -265,6 +267,14 @@ LOCAL.push(
 );
 
 const $=id=>document.getElementById(id);
+document.addEventListener("focusin",e=>{
+  const campo=e.target;
+  if(campo instanceof HTMLTextAreaElement||
+    campo instanceof HTMLInputElement&&["text","search","url","tel","password"].includes(campo.type)){
+    const fim=campo.value.length;
+    campo.setSelectionRange(fim,fim);
+  }
+});
 let S={meta:2000,metap:100,peso:"",pesoAlvo:"",produtos:{},perfil:{sexo:"m",idade:"",altura:"",ativ:"1.375"},dias:{},chave:""};
 try{const t=localStorage.getItem("calorias-v1");if(t)S=Object.assign(S,JSON.parse(t))}catch(e){}
 S.perfil={sexo:"m",idade:"",altura:"",ativ:"1.375",...(S.perfil||{})};delete S.perfil.obj;
@@ -328,7 +338,7 @@ function render(){
     if(!it.length)return"";
     const sub=it.reduce((a,o)=>a+o.x.k,0);
     return`<div class="meal"><h3><span>${nome}</span><span>${Math.round(sub)} kcal</span></h3>`+
-      it.map(o=>`<div class="item"><span>${esc(o.x.nome)} <small>${o.x.unidade?o.x.quantidade+" "+esc(o.x.unidade):o.x.gr?o.x.gr+" g":""}</small></span><span class="item-actions">${editando===o.j?`<input class="amount-edit" type="text" inputmode="decimal" data-amount="${o.j}" value="${esc(String(o.x.unidade?o.x.quantidade:o.x.gr||""))}" aria-label="Nova quantidade em ${o.x.unidade?esc(o.x.unidade):"gramas"}"><small>${o.x.unidade?esc(o.x.unidade):"g"}</small><button class="ghost edit" data-save="${o.j}">Guardar</button><button class="x" data-cancel="${o.j}" aria-label="Cancelar edição">×</button>`:`<span>${Math.round(o.x.k)} kcal</span><button class="ghost edit" data-edit="${o.j}" aria-label="Editar quantidade de ${esc(o.x.nome)}">Editar</button><button class="x" data-del="${o.j}" aria-label="Remover ${esc(o.x.nome)}">×</button>`}</span></div>`).join("")+`</div>`;
+      it.map(o=>`<div class="item"><span>${esc(o.x.nome)} <small>${o.x.unidade?o.x.quantidade+" "+esc(o.x.unidade):o.x.gr?o.x.gr+" g":""}</small></span><span class="item-actions">${editando===o.j?`<input class="amount-edit" type="text" inputmode="decimal" data-amount="${o.j}" value="${esc(String(o.x.unidade?o.x.quantidade:o.x.gr||""))}" aria-label="Nova quantidade em ${o.x.unidade?esc(o.x.unidade):"gramas"}"><small>${o.x.unidade?esc(o.x.unidade):"g"}</small><select class="meal-edit" data-meal="${o.j}" aria-label="Refeição de ${esc(o.x.nome)}">${REFS.map((r,i)=>`<option value="${i}"${o.x.ref==i?" selected":""}>${r}</option>`).join("")}</select><button class="ghost edit" data-save="${o.j}">Guardar</button><button class="x" data-cancel="${o.j}" aria-label="Cancelar edição">×</button>`:`<span>${Math.round(o.x.k)} kcal</span><button class="ghost edit" data-edit="${o.j}" aria-label="Editar quantidade de ${esc(o.x.nome)}">Editar</button><button class="x" data-del="${o.j}" aria-label="Remover ${esc(o.x.nome)}">×</button>`}</span></div>`).join("")+`</div>`;
   }).join("")||'<p class="empty">Ainda não adicionou nada neste dia. Pesquise um alimento ao lado.</p>';
 }
 
@@ -350,6 +360,7 @@ $("refeicoes").onclick=e=>{
     const fator=quantidade/atual;
     ["k","p","h","g"].forEach(c=>{if(Number.isFinite(+item[c]))item[c]=+item[c]*fator});
     item[campo]=quantidade;
+    item.ref=+$("refeicoes").querySelector(`[data-meal="${j}"]`).value;
     S.quantidades[chaveQuantidade(item.nome,dose?item.unidade:"g")]=quantidade;
     editando=null;
     save();render();return;
@@ -586,11 +597,20 @@ function mostrar(lista,aviso){
     `<div class="res"><span>${esc(a.nome)}<span class="src">${a.src}</span><br><small class="note">${Math.round(a.k)} kcal · P ${r1(a.p)} · H ${r1(a.h)} · G ${r1(a.g)} (${a.base==="dose"?"dose completa":"100 g"})</small></span><button class="ghost" data-i="${i}">Escolher</button></div>`).join("");
   el._l=lista;
 }
+function atualizarCaloriasQuantidade(){
+  if(!sel)return;
+  const q=Number($("gr").value);
+  if(!Number.isFinite(q)||q<=0){$("gr-kcal").textContent="Introduza uma quantidade válida para ver as calorias.";return}
+  const fator=sel.base==="dose"?q:q/100;
+  $("gr-kcal").textContent=`${Math.round(sel.k*fator)} kcal nesta quantidade`;
+}
+$("gr").oninput=atualizarCaloriasQuantidade;
 $("res").onclick=e=>{const i=e.target.dataset.i;if(i===undefined)return;
   sel=$("res")._l[+i];$("sel").style.display="block";const unidade=sel.base==="dose"?"dose":"g";$("gr").value=quantidadeUsual(sel.nome,unidade,sel.por||(unidade==="dose"?1:100));$("gr-unit").textContent=unidade;
   $("gr").setAttribute("aria-label",sel.base==="dose"?"Quantidade em doses":"Quantidade em gramas");
   $("sel-nome").textContent=sel.nome;
-  $("sel-info").textContent=sel.base==="dose"?`${Math.round(sel.k)} kcal por dose completa`:`${Math.round(sel.k)} kcal/100 g`+(sel.por?` · porção habitual ${sel.por} g`:"");$("gr").focus();};
+  $("sel-info").textContent=sel.base==="dose"?`${Math.round(sel.k)} kcal por dose completa`:`${Math.round(sel.k)} kcal/100 g`+(sel.por?` · porção habitual ${sel.por} g`:"");
+  atualizarCaloriasQuantidade();$("gr").focus();};
 $("b-canc").onclick=()=>{sel=null;$("sel").style.display="none"};
 $("b-add").onclick=()=>{if(!sel)return;const q=+$("gr").value||(sel.base==="dose"?1:100),f=sel.base==="dose"?q:q/100;
   add({nome:sel.nome,gr:sel.base==="dose"?undefined:q,quantidade:sel.base==="dose"?q:undefined,unidade:sel.base==="dose"?"dose":undefined,k:sel.k*f,p:sel.p*f,h:sel.h*f,g:sel.g*f,ref:+$("ref").value});
