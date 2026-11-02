@@ -102,7 +102,8 @@ input.amount-edit{width:82px;padding:6px 8px}
 .tabs .tab[aria-selected="true"]{background:linear-gradient(135deg,#ffb347 0%,#ff7b00 52%,#ff9f1c 100%);color:#20140a;border-color:transparent}
 #panels>.tab-panel[hidden]{display:none}
 @media(max-width:600px){
-  main{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+  main{padding-right:max(8px,env(safe-area-inset-right));padding-bottom:calc(84px + env(safe-area-inset-bottom));padding-left:max(8px,env(safe-area-inset-left))}
+  section{padding:14px}
   .tabs{position:fixed;z-index:20;right:0;bottom:0;left:0;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:0;padding:6px max(8px,env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:rgba(23,20,18,.96);box-shadow:0 -8px 24px rgba(0,0,0,.3);backdrop-filter:blur(12px)}
   .tabs .tab{min-height:40px;padding:4px;border:0;border-radius:8px}
   .tabs .tab svg{width:18px;height:18px}
