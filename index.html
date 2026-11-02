@@ -90,7 +90,9 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:6px 8px
 summary{cursor:pointer;color:#ffb347}
 main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));padding-top:max(20px,env(safe-area-inset-top));padding-bottom:max(60px,env(safe-area-inset-bottom))}
 button{min-height:40px}
-.item-actions{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-wrap:wrap;justify-content:flex-end}
+.item>span:first-child{flex:1;min-width:0}
+.item-actions{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-wrap:nowrap;justify-content:flex-end}
+.item-actions.editing{flex-wrap:wrap}
 button.edit{min-height:32px;padding:4px 8px;font-size:.8rem}
 input.amount-edit{width:82px;padding:6px 8px}
 .item-actions select.meal-edit{max-width:145px;padding:5px 6px;font-size:.8rem}
@@ -290,6 +292,12 @@ function aplicar(){$("data").value=hoje();$("meta").value=S.meta;$("metap").valu
 aplicar();
 
 function dia(){return S.dias[$("data").value]||(S.dias[$("data").value]=[])}
+function atualizarRefeicaoSelecionada(){
+  const itens=dia(),ultimo=itens[itens.length-1];
+  const ref=ultimo&&Number.isInteger(+ultimo.ref)&&+ultimo.ref>=0&&+ultimo.ref<REFS.length?+ultimo.ref:0;
+  $("ref").value=ref;$("m-r").value=ref;
+}
+atualizarRefeicaoSelecionada();
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 const norm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 function objetivoPeso(){
@@ -338,7 +346,7 @@ function render(){
     if(!it.length)return"";
     const sub=it.reduce((a,o)=>a+o.x.k,0);
     return`<div class="meal"><h3><span>${nome}</span><span>${Math.round(sub)} kcal</span></h3>`+
-      it.map(o=>`<div class="item"><span>${esc(o.x.nome)} <small>${o.x.unidade?o.x.quantidade+" "+esc(o.x.unidade):o.x.gr?o.x.gr+" g":""}</small></span><span class="item-actions">${editando===o.j?`<input class="amount-edit" type="text" inputmode="decimal" data-amount="${o.j}" value="${esc(String(o.x.unidade?o.x.quantidade:o.x.gr||""))}" aria-label="Nova quantidade em ${o.x.unidade?esc(o.x.unidade):"gramas"}"><small>${o.x.unidade?esc(o.x.unidade):"g"}</small><select class="meal-edit" data-meal="${o.j}" aria-label="Refeição de ${esc(o.x.nome)}">${REFS.map((r,i)=>`<option value="${i}"${o.x.ref==i?" selected":""}>${r}</option>`).join("")}</select><button class="ghost edit" data-save="${o.j}">Guardar</button><button class="x" data-cancel="${o.j}" aria-label="Cancelar edição">×</button>`:`<span>${Math.round(o.x.k)} kcal</span><button class="ghost edit" data-edit="${o.j}" aria-label="Editar quantidade de ${esc(o.x.nome)}">Editar</button><button class="x" data-del="${o.j}" aria-label="Remover ${esc(o.x.nome)}">×</button>`}</span></div>`).join("")+`</div>`;
+      it.map(o=>`<div class="item"><span>${esc(o.x.nome)} <small>${o.x.unidade?o.x.quantidade+" "+esc(o.x.unidade):o.x.gr?o.x.gr+" g":""}</small></span><span class="item-actions${editando===o.j?" editing":""}">${editando===o.j?`<input class="amount-edit" type="text" inputmode="decimal" data-amount="${o.j}" value="${esc(String(o.x.unidade?o.x.quantidade:o.x.gr||""))}" aria-label="Nova quantidade em ${o.x.unidade?esc(o.x.unidade):"gramas"}"><small>${o.x.unidade?esc(o.x.unidade):"g"}</small><select class="meal-edit" data-meal="${o.j}" aria-label="Refeição de ${esc(o.x.nome)}">${REFS.map((r,i)=>`<option value="${i}"${o.x.ref==i?" selected":""}>${r}</option>`).join("")}</select><button class="ghost edit" data-save="${o.j}">Guardar</button><button class="x" data-cancel="${o.j}" aria-label="Cancelar edição">×</button>`:`<span>${Math.round(o.x.k)} kcal</span><button class="ghost edit" data-edit="${o.j}" aria-label="Editar quantidade de ${esc(o.x.nome)}">Editar</button><button class="x" data-del="${o.j}" aria-label="Remover ${esc(o.x.nome)}">×</button>`}</span></div>`).join("")+`</div>`;
   }).join("")||'<p class="empty">Ainda não adicionou nada neste dia. Pesquise um alimento ao lado.</p>';
 }
 
@@ -363,12 +371,12 @@ $("refeicoes").onclick=e=>{
     item.ref=+$("refeicoes").querySelector(`[data-meal="${j}"]`).value;
     S.quantidades[chaveQuantidade(item.nome,dose?item.unidade:"g")]=quantidade;
     editando=null;
-    save();render();return;
+    atualizarRefeicaoSelecionada();save();render();return;
   }
   const remover=t.dataset.del;
-  if(remover!==undefined){dia().splice(+remover,1);save();render()}
+  if(remover!==undefined){dia().splice(+remover,1);atualizarRefeicaoSelecionada();save();render()}
 };
-$("data").onchange=render;
+$("data").onchange=()=>{atualizarRefeicaoSelecionada();render()};
 $("periodo-historico").onchange=semana;
 $("meta").onchange=()=>{S.meta=+$("meta").value||2000;save();render()};
 $("metap").onchange=()=>{S.metap=+$("metap").value||0;save();render()};
@@ -527,7 +535,7 @@ function plano2(){plano()}
 function add(item){
   const quantidade=item.unidade?item.quantidade:item.gr;
   if(Number.isFinite(+quantidade)&&+quantidade>0)S.quantidades[chaveQuantidade(item.nome,item.unidade||"g")]=+quantidade;
-  dia().push(item);save();render();
+  dia().push(item);atualizarRefeicaoSelecionada();save();render();
 }
 
 async function enviarParaOFF(produto,utilizador,palavraPasse){
@@ -570,7 +578,7 @@ $("f-man").onsubmit=async e=>{e.preventDefault();
   }:null;
   if(cod){const f=100/q;S.produtos[cod]={nome:$("m-n").value,k:k*f,p:p*f,h:h*f,g:g*f,por:q};listaMeus()}
   add({nome:$("m-n").value,k,p,h,g,gr:q||undefined,ref:+$("m-r").value});
-  e.target.reset();$("m-r").value=1;$("m-off-auth").hidden=true;
+  e.target.reset();atualizarRefeicaoSelecionada();$("m-off-auth").hidden=true;
   $("m-off-status").textContent=contribuir?"Produto guardado neste dispositivo. A enviar contribuição…":"";
   if(produtoOFF){
     try{
