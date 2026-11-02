@@ -212,9 +212,11 @@ input.amount-edit{width:82px;padding:6px 8px}
     <label>Idade <input type="number" id="idade" min="14" max="99" style="width:70px"></label>
     <label>Altura <input type="number" id="altura" min="120" max="230" style="width:80px"> cm</label>
     <label>Peso atual <input type="number" id="peso" min="20" step="0.1" style="width:90px"> kg</label>
+    <button type="button" class="ghost" id="b-peso">Guardar peso de hoje</button>
     <label>Peso-alvo <input type="number" id="peso-alvo" min="20" step="0.1" style="width:90px"> kg</label>
     <select id="ativ" aria-label="Atividade física"><option value="1.2">Sedentário</option><option value="1.375">Pouco ativo (1–3 treinos/semana)</option><option value="1.55">Ativo (3–5 treinos/semana)</option><option value="1.725">Muito ativo (6–7 treinos/semana)</option></select>
   </div>
+  <p class="note" id="peso-status" aria-live="polite"></p>
   <p class="note" id="previsao-peso" aria-live="polite"></p>
   <div id="plano"></div>
 </section>
@@ -223,6 +225,7 @@ input.amount-edit{width:82px;padding:6px 8px}
 <section class="wk" aria-labelledby="h-sem">
   <div class="row" style="justify-content:space-between"><h2 id="h-sem">Histórico diário</h2><label>Período <select id="periodo-historico" aria-label="Período do histórico"><option value="7">7 dias</option><option value="30">30 dias</option><option value="90">90 dias</option><option value="365">1 ano</option></select></label></div>
   <p class="note" id="med"></p>
+  <h3>Peso ao longo do tempo</h3><div id="grafico-peso"></div>
   <h3>Calorias por dia</h3><div id="grafico-kcal"></div>
   <h3>Proteína por dia</h3><div id="grafico-proteina"></div>
   <h3>Registos diários</h3><table><thead><tr><th>Dia</th><th>kcal</th><th>Proteína (g)</th></tr></thead><tbody id="sem"></tbody></table>
@@ -283,6 +286,10 @@ let S={meta:2000,metap:100,peso:"",pesoAlvo:"",produtos:{},perfil:{sexo:"m",idad
 try{const t=localStorage.getItem("calorias-v1");if(t)S=Object.assign(S,JSON.parse(t))}catch(e){}
 S.perfil={sexo:"m",idade:"",altura:"",ativ:"1.375",...(S.perfil||{})};delete S.perfil.obj;
 S.quantidades=S.quantidades&&typeof S.quantidades=="object"&&!Array.isArray(S.quantidades)?S.quantidades:{};
+function normalizarPesos(pesos){
+  return Array.isArray(pesos)?pesos.filter(x=>x&&/^\d{4}-\d{2}-\d{2}$/.test(x.data)&&Number.isFinite(+x.kg)&&+x.kg>0).map(x=>({data:x.data,kg:+x.kg})):[];
+}
+S.pesos=normalizarPesos(S.pesos);
 const save=()=>{try{localStorage.setItem("calorias-v1",JSON.stringify(S))}catch(e){}};
 const hoje=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
 const r1=n=>Math.round(n*10)/10;
@@ -383,22 +390,34 @@ $("periodo-historico").onchange=semana;
 $("meta").onchange=()=>{S.meta=+$("meta").value||2000;save();render()};
 $("metap").onchange=()=>{S.metap=+$("metap").value||0;save();render()};
 $("pf").onchange=()=>{S.peso=$("peso").value;S.pesoAlvo=$("peso-alvo").value;["sexo","idade","altura","ativ"].forEach(k=>S.perfil[k]=$(k).value);save();PV=[0,0,0,0];plano();render()};
+$("b-peso").onclick=()=>{
+  const kg=Number($("peso").value);
+  if(!Number.isFinite(kg)||kg<=0){$("peso-status").textContent="Indique um peso válido maior que zero."; $("peso").focus();return}
+  const data=hoje();
+  S.peso=$("peso").value;
+  S.pesos=normalizarPesos(S.pesos).filter(x=>x.data!==data);
+  S.pesos.push({data,kg});
+  save();$("peso-status").textContent=`Peso de ${r1(kg)} kg guardado para hoje.`;
+  semana();
+};
 $("chave").onchange=()=>{S.chave=$("chave").value.trim();save()};
 
 function semana(){
   const mk=+$("metap").value||0,meta=+$("meta").value||2000,base=new Date($("data").value+"T12:00:00");
-  const dias=+$("periodo-historico").value||7,registos=[];
+  const dias=+$("periodo-historico").value||7,registos=[],pesosPorData=new Map(normalizarPesos(S.pesos).map(x=>[x.data,x.kg]));
   let rows="",sk=0,sp=0,n=0;
   for(let i=dias-1;i>=0;i--){
     const d=new Date(base);d.setDate(d.getDate()-i);
-    const L=S.dias[new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)]||[];
+    const data=new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+    const L=S.dias[data]||[];
     const k=L.reduce((a,x)=>a+x.k,0),p=L.reduce((a,x)=>a+(x.p||0),0),temRegistos=L.length>0;
     if(temRegistos){sk+=k;sp+=p;n++}
-    registos.push({data:new Date(d),k:temRegistos?k:null,p:temRegistos?p:null});
+    registos.push({data:new Date(d),k:temRegistos?k:null,p:temRegistos?p:null,peso:pesosPorData.get(data)??null});
     rows+=`<tr><td>${d.toLocaleDateString("pt-PT",{weekday:"short",day:"numeric",month:"short"})}</td><td>${L.length?Math.round(k):"–"}</td><td class="${mk&&p>=mk?"ok":""}">${L.length?Math.round(p):"–"}</td></tr>`;
   }
   $("sem").innerHTML=rows;
   $("med").textContent=n?`Média nos ${n} dias com registos: ${Math.round(sk/n)} kcal e ${Math.round(sp/n)} g de proteína por dia. O período termina em ${base.toLocaleDateString("pt-PT",{day:"numeric",month:"short",year:"numeric"})}.`:`Sem registos nos últimos ${dias} dias até ${base.toLocaleDateString("pt-PT",{day:"numeric",month:"short",year:"numeric"})}.`;
+  $("grafico-peso").innerHTML=graficoHistorico(registos,"peso","kg",0,"");
   $("grafico-kcal").innerHTML=graficoHistorico(registos,"k","kcal",meta,"Meta diária");
   $("grafico-proteina").innerHTML=graficoHistorico(registos,"p","g",mk,"Meta de proteína");
 }
@@ -407,26 +426,29 @@ function graficoHistorico(registos,campo,unidade,meta,nomeMeta){
   const pontos=registos.map((r,i)=>({i,valor:r[campo]})).filter(p=>p.valor!==null);
   if(!pontos.length)return'<p class="empty">Sem dados para apresentar neste período.</p>';
   const w=640,h=220,esq=48,direita=12,cima=18,baixo=38,largura=w-esq-direita,altura=h-cima-baixo;
-  const max=Math.max(meta,...pontos.map(p=>p.valor),1),passo=10**Math.floor(Math.log10(max)),limite=Math.ceil(max/passo)*passo;
+  const max=Math.max(meta,...pontos.map(p=>p.valor),1),passo=campo==="peso"?1:10**Math.floor(Math.log10(max));
+  const minimo=campo==="peso"?Math.max(0,Math.floor((Math.min(...pontos.map(p=>p.valor))-1)*2)/2):0;
+  const limite=Math.ceil(max/passo)*passo;
   const larguraIntervalo=largura/registos.length;
   const x=i=>esq+(i+.5)*larguraIntervalo;
-  const y=v=>cima+altura-(v/limite)*altura;
+  const y=v=>cima+altura-((v-minimo)/(limite-minimo))*altura;
   const grade=Array.from({length:5},(_,i)=>{
-    const valor=limite*i/4,yy=y(valor);
-    return`<line x1="${esq}" y1="${yy}" x2="${w-direita}" y2="${yy}" stroke="var(--line)"/><text x="${esq-7}" y="${yy+4}" text-anchor="end" fill="var(--mut)" font-size="11">${Math.round(valor)}</text>`;
+    const valor=minimo+(limite-minimo)*i/4,yy=y(valor);
+    return`<line x1="${esq}" y1="${yy}" x2="${w-direita}" y2="${yy}" stroke="var(--line)"/><text x="${esq-7}" y="${yy+4}" text-anchor="end" fill="var(--mut)" font-size="11">${campo==="peso"?r1(valor):Math.round(valor)}</text>`;
   }).join("");
   const quantidadeMarcas=Math.min(6,registos.length),marcas=Array.from({length:quantidadeMarcas},(_,i)=>Math.round(i*(registos.length-1)/(quantidadeMarcas-1||1)));
   const eixoX=marcas.map(i=>`<text x="${x(i)}" y="${h-10}" text-anchor="middle" fill="var(--mut)" font-size="11">${registos[i].data.toLocaleDateString("pt-PT",{day:"numeric",month:"short"})}</text>`).join("");
-  const barras=pontos.map(p=>{
+  const barras=campo==="peso"?"":pontos.map(p=>{
     const topo=y(p.valor),larguraBarra=Math.min(26,larguraIntervalo*.72);
     return`<rect x="${x(p.i)-larguraBarra/2}" y="${topo}" width="${larguraBarra}" height="${cima+altura-topo}" rx="2" fill="var(--blue)"><title>${registos[p.i].data.toLocaleDateString("pt-PT")}: ${Math.round(p.valor)} ${unidade}</title></rect>`;
   }).join("");
   const pontosLinha=pontos.map(p=>({x:x(p.i),y:y(p.valor),valor:p.valor,data:registos[p.i].data}));
   const linhas=pontosLinha.length>1?`<polyline points="${pontosLinha.map(p=>`${p.x},${p.y}`).join(" ")}" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`:"";
-  const circulos=pontosLinha.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="3" fill="var(--ink)" stroke="var(--blue)" stroke-width="1.5"><title>${p.data.toLocaleDateString("pt-PT")}: ${Math.round(p.valor)} ${unidade}</title></circle>`).join("");
+  const circulos=pontosLinha.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="3" fill="var(--ink)" stroke="var(--blue)" stroke-width="1.5"><title>${p.data.toLocaleDateString("pt-PT")}: ${campo==="peso"?r1(p.valor):Math.round(p.valor)} ${unidade}</title></circle>`).join("");
   const linhaMeta=meta>0&&meta<=limite?`<line x1="${esq}" y1="${y(meta)}" x2="${w-direita}" y2="${y(meta)}" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="5 4"/>`:"";
-  const legenda=meta>0?`<p class="note"><span style="color:var(--blue)">■</span> Registo diário · <span style="color:var(--ink)">━</span> Linha entre registos${linhaMeta?` · <span style="color:var(--warn)">┄</span> ${nomeMeta}: ${Math.round(meta)} ${unidade}`:""}</p>`:`<p class="note"><span style="color:var(--blue)">■</span> Registo diário · <span style="color:var(--ink)">━</span> Linha entre registos</p>`;
-  return`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${campo==="k"?"Gráfico de calorias":"Gráfico de proteína"} nos últimos ${registos.length} dias" style="display:block;width:100%;height:auto">${grade}${barras}${linhaMeta}${linhas}${circulos}${eixoX}</svg>${legenda}`;
+  const descricao=campo==="k"?"calorias":campo==="p"?"proteína":"peso";
+  const legenda=meta>0?`<p class="note"><span style="color:var(--blue)">■</span> Registo diário · <span style="color:var(--ink)">━</span> Linha entre registos${linhaMeta?` · <span style="color:var(--warn)">┄</span> ${nomeMeta}: ${Math.round(meta)} ${unidade}`:""}</p>`:`<p class="note"><span style="color:var(--ink)">━</span> Peso registado</p>`;
+  return`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Gráfico de ${descricao} nos últimos ${registos.length} dias" style="display:block;width:100%;height:auto">${grade}${barras}${linhaMeta}${linhas}${circulos}${eixoX}</svg>${legenda}`;
 }
 
 // g de proteína por kg: [mínimo, máximo, alvo]
@@ -774,7 +796,7 @@ $("f-imp").onchange=async e=>{
     const dias={};
     for(const[k,v]of Object.entries(d.dias))if(Array.isArray(v))dias[k]=v.filter(x=>x&&typeof x.nome=="string"&&isFinite(x.k));
     if(!confirm(`Importar ${Object.keys(dias).length} dia(s) de registos? Os dados atuais serão substituídos.`))return;
-    S={...S,meta:+d.meta||2000,metap:+d.metap||0,peso:d.peso||"",pesoAlvo:d.pesoAlvo||"",perfil:{...S.perfil,...(d.perfil||{})},dias,produtos:(d.produtos&&typeof d.produtos=="object")?d.produtos:{},quantidades:(d.quantidades&&typeof d.quantidades=="object"&&!Array.isArray(d.quantidades))?d.quantidades:S.quantidades};
+    S={...S,meta:+d.meta||2000,metap:+d.metap||0,peso:d.peso||"",pesoAlvo:d.pesoAlvo||"",pesos:normalizarPesos(d.pesos),perfil:{...S.perfil,...(d.perfil||{})},dias,produtos:(d.produtos&&typeof d.produtos=="object")?d.produtos:{},quantidades:(d.quantidades&&typeof d.quantidades=="object"&&!Array.isArray(d.quantidades))?d.quantidades:S.quantidades};
     delete S.perfil.obj;
     save();PV=[0,0,0,0];aplicar();plano();render();infoBk();alert("Dados importados.");
   }catch(err){alert("Ficheiro inválido. Escolha uma cópia de segurança exportada por esta aplicação.")}
