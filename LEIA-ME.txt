@@ -1,4 +1,4 @@
-CONTROLO DE CALORIAS (PWA)
+joule (PWA)
 
 Conteúdo
   index.html            a aplicação

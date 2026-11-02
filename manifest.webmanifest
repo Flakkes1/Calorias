@@ -1,6 +1,6 @@
 {
-  "name": "Controlo de calorias",
-  "short_name": "Calorias",
+  "name": "joule",
+  "short_name": "joule",
   "description": "Diário de calorias e proteína com plano alimentar.",
   "lang": "pt-PT",
   "start_url": "./",
