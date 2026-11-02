@@ -1,6 +1,6 @@
 {
-  "name": "joule",
-  "short_name": "joule",
+  "name": "Joule",
+  "short_name": "Joule",
   "description": "Diário de calorias e proteína com plano alimentar.",
   "lang": "pt-PT",
   "start_url": "./",

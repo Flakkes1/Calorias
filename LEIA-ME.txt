@@ -1,4 +1,4 @@
-joule (PWA)
+Joule (PWA)
 
 Conteúdo
   index.html            a aplicação
