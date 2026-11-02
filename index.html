@@ -172,7 +172,7 @@ input.amount-edit{width:82px;padding:6px 8px}
   <div id="res" aria-live="polite"></div>
   <details id="det-man">
     <summary>Adicionar manualmente</summary>
-    <p class="note" style="margin:8px 0 0">Indique os valores da porção que comeu. Se deixar as kcal em branco, calculo-as a partir dos macros. Se indicar o código de barras e a quantidade a que os valores se referem, o produto fica guardado e a app preenche-o sozinha da próxima vez que o ler.</p>
+    <p class="note" style="margin:8px 0 0">Indique os valores da porção que comeu e a quantidade em g/ml a que se referem. Se deixar as kcal em branco, calculo-as a partir dos macros. Quando indica a quantidade, o alimento fica guardado neste dispositivo para futuras pesquisas; pode também indicar uma porção habitual para a app sugerir essa quantidade da próxima vez.</p>
     <form class="row" id="f-man">
       <input id="m-n" placeholder="Nome" required style="flex:1 1 140px">
       <input id="m-k" type="number" min="0" step="any" placeholder="kcal" aria-label="Calorias" style="width:80px">
@@ -180,6 +180,7 @@ input.amount-edit{width:82px;padding:6px 8px}
       <input id="m-h" type="number" min="0" step="any" placeholder="Hidr. g" aria-label="Hidratos em gramas" style="width:80px">
       <input id="m-g" type="number" min="0" step="any" placeholder="Gord. g" aria-label="Gordura em gramas" style="width:80px">
       <input id="m-q" type="number" min="1" step="any" placeholder="Qtd. g/ml" aria-label="Quantidade em gramas ou mililitros" style="width:90px">
+      <input id="m-por" type="number" min="0.1" step="any" placeholder="Porção habitual g/ml" aria-label="Porção habitual em gramas ou mililitros, opcional" style="width:145px">
       <input id="m-c" inputmode="numeric" placeholder="Código de barras (opcional)" aria-label="Código de barras" style="flex:1 1 180px">
       <select id="m-r" aria-label="Refeição"></select>
       <label style="flex:1 1 100%"><input type="checkbox" id="m-off"> Contribuir este produto para o Open Food Facts</label>
@@ -565,20 +566,30 @@ $("m-n").onchange=()=>{
   if(+$("m-q").value<=0&&Number.isFinite(+q)&&+q>0)$("m-q").value=q;
 };
 $("f-man").onsubmit=async e=>{e.preventDefault();
+  const nome=$("m-n").value.trim();
+  if(!nome){$("m-n").focus();return}
   const p=+$("m-p").value||0,h=+$("m-h").value||0,g=+$("m-g").value||0;
   const k=$("m-k").value!==""?+$("m-k").value:p*4+h*4+g*9;
   if(!k&&!p&&!h&&!g){$("m-k").focus();return}
   const q=+$("m-q").value||0,cod=$("m-c").value.replace(/\D/g,"");
   if(cod&&!q){alert("Para guardar o produto com este código, indique a quantidade em g ou ml a que os valores se referem.");$("m-q").focus();return}
   const contribuir=$("m-off").checked;
+  const por=$("m-por").value!==""?+$("m-por").value:q;
+  if($("m-por").value!==""&&(!Number.isFinite(por)||por<=0)){alert("Indique uma porção habitual válida maior que zero.");$("m-por").focus();return}
+  if(por&&!q){alert("Indique a quantidade em g/ml a que os valores nutricionais se referem para guardar este alimento com uma porção habitual.");$("m-q").focus();return}
   if(contribuir&&(!cod||!q)){alert("Para contribuir para o Open Food Facts, indique o código de barras e a quantidade dos valores nutricionais.");$("m-c").focus();return}
   if(contribuir&&(!$("m-off-user").value.trim()||!$("m-off-pass").value)){alert("Indique o utilizador e a palavra-passe da sua conta Open Food Facts.");$("m-off-user").focus();return}
   const produtoOFF=contribuir?{
-    cod,nome:$("m-n").value.trim(),k:k*100/q,p:p*100/q,h:h*100/q,g:g*100/q,
+    cod,nome,k:k*100/q,p:p*100/q,h:h*100/q,g:g*100/q,
     utilizador:$("m-off-user").value.trim(),palavraPasse:$("m-off-pass").value
   }:null;
-  if(cod){const f=100/q;S.produtos[cod]={nome:$("m-n").value,k:k*f,p:p*f,h:h*f,g:g*f,por:q};listaMeus()}
-  add({nome:$("m-n").value,k,p,h,g,gr:q||undefined,ref:+$("m-r").value});
+  if(q){
+    const f=100/q,chave=cod||"manual:"+norm(nome);
+    S.produtos[chave]={nome,k:k*f,p:p*f,h:h*f,g:g*f,por,src:"Manual"};
+    listaMeus();
+  }
+  add({nome,k,p,h,g,gr:q||undefined,ref:+$("m-r").value});
+  if(por){S.quantidades[chaveQuantidade(nome,"g")]=por;save()}
   e.target.reset();atualizarRefeicaoSelecionada();$("m-off-auth").hidden=true;
   $("m-off-status").textContent=contribuir?"Produto guardado neste dispositivo. A enviar contribuição…":"";
   if(produtoOFF){
@@ -595,7 +606,7 @@ $("f-man").onsubmit=async e=>{e.preventDefault();
 };
 function listaMeus(){
   const e=Object.entries(S.produtos||{});
-  $("meus").innerHTML=e.length?e.map(([c,a])=>`<div class="item"><span>${esc(a.nome)} <small>${c} · ${Math.round(a.k)} kcal/100 g</small></span><button class="x" data-c="${c}" aria-label="Remover ${esc(a.nome)}">×</button></div>`).join(""):'<p class="note">Ainda não guardou nenhum produto.</p>';
+  $("meus").innerHTML=e.length?e.map(([c,a])=>`<div class="item"><span>${esc(a.nome)} <small>${c.startsWith("manual:")?"Manual":c} · ${Math.round(a.k)} kcal/100 g${a.por?` · porção ${a.por} g/ml`:""}</small></span><button class="x" data-c="${c}" aria-label="Remover ${esc(a.nome)}">×</button></div>`).join(""):'<p class="note">Ainda não guardou nenhum produto.</p>';
 }
 $("meus").onclick=e=>{const c=e.target.dataset.c;if(c&&confirm("Remover este produto guardado?")){delete S.produtos[c];save();listaMeus()}};
 
