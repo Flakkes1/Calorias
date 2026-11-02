@@ -185,9 +185,10 @@ input.amount-edit{width:82px;padding:6px 8px}
       <select id="m-r" aria-label="Refeição"></select>
       <label style="flex:1 1 100%"><input type="checkbox" id="m-off"> Contribuir este produto para o Open Food Facts</label>
       <div id="m-off-auth" class="row" hidden style="flex:1 1 100%">
-        <input id="m-off-user" autocomplete="username" placeholder="Utilizador/ID Open Food Facts (não e-mail)" aria-label="Utilizador ou ID Open Food Facts, não e-mail" style="flex:1 1 180px">
-        <input id="m-off-pass" type="password" autocomplete="current-password" placeholder="Palavra-passe Open Food Facts" aria-label="Palavra-passe Open Food Facts" style="flex:1 1 180px">
-        <p class="note" style="flex:1 1 100%;margin:0">Envia o código, nome e valores nutricionais por 100 g para o catálogo público português. Use o seu utilizador/ID (não o e-mail). As credenciais são usadas apenas neste envio e não são guardadas pela aplicação.</p>
+        <input id="m-off-user" name="username" autocomplete="username" placeholder="Utilizador/ID Open Food Facts (não e-mail)" aria-label="Utilizador ou ID Open Food Facts, não e-mail" style="flex:1 1 180px">
+        <input id="m-off-pass" name="password" type="password" autocomplete="current-password" placeholder="Palavra-passe Open Food Facts" aria-label="Palavra-passe Open Food Facts" style="flex:1 1 180px">
+        <label style="flex:1 1 100%"><input type="checkbox" id="m-off-remember"> Guardar credenciais no gestor de palavras-passe do browser</label>
+        <p class="note" style="flex:1 1 100%;margin:0">Envia o código, nome e valores nutricionais por 100 g para o catálogo público português. Use o seu utilizador/ID (não o e-mail). As credenciais são enviadas em cada contribuição; se optar por guardar, ficam no gestor de palavras-passe do browser, não na aplicação.</p>
       </div>
       <button>Adicionar</button>
     </form>
@@ -583,6 +584,39 @@ async function enviarParaOFF(produto,utilizador,palavraPasse){
   if(resultado.status!==1)throw new Error(resultado.status_verbose||"o Open Food Facts não aceitou os dados");
 }
 $("m-off").onchange=()=>{$("m-off-auth").hidden=!$("m-off").checked};
+const credenciaisOFFDisponiveis=()=>window.isSecureContext&&navigator.credentials&&typeof navigator.credentials.get==="function"&&typeof navigator.credentials.store==="function"&&typeof window.PasswordCredential==="function";
+async function carregarCredenciaisOFF(mediation){
+  if(!credenciaisOFFDisponiveis()){
+    $("m-off-status").textContent="Este browser não permite guardar credenciais através da aplicação. Pode usar o preenchimento automático do gestor de palavras-passe do browser.";
+    return;
+  }
+  try{
+    const credencial=await navigator.credentials.get({password:true,mediation});
+    if(credencial&&!$("m-off-user").value&&!$("m-off-pass").value){
+      $("m-off-user").value=credencial.id;
+      $("m-off-pass").value=credencial.password;
+      $("m-off-status").textContent="Credenciais preenchidas pelo gestor de palavras-passe do browser.";
+    }
+  }catch(err){
+    $("m-off-status").textContent=`Não foi possível obter as credenciais guardadas: ${err.message}.`;
+  }
+}
+async function guardarCredenciaisOFF(utilizador,palavraPasse){
+  if(!credenciaisOFFDisponiveis())return"Este browser não permite guardar credenciais através da aplicação; use o preenchimento automático do gestor de palavras-passe.";
+  try{
+    await navigator.credentials.store(new PasswordCredential({id:utilizador,password:palavraPasse}));
+    return"Credenciais guardadas no gestor de palavras-passe do browser.";
+  }catch(err){
+    return`A contribuição foi enviada, mas não foi possível guardar as credenciais no gestor do browser: ${err.message}.`;
+  }
+}
+const lembrarOFF=localStorage.getItem("calorias-off-remember")==="true";
+$("m-off-remember").checked=lembrarOFF;
+$("m-off-remember").onchange=()=>{
+  localStorage.setItem("calorias-off-remember",String($("m-off-remember").checked));
+  if($("m-off-remember").checked)carregarCredenciaisOFF("optional");
+};
+if(lembrarOFF)carregarCredenciaisOFF("silent");
 $("m-n").onchange=()=>{
   const q=S.quantidades[chaveQuantidade($("m-n").value.trim(),"g")];
   if(+$("m-q").value<=0&&Number.isFinite(+q)&&+q>0)$("m-q").value=q;
@@ -612,12 +646,14 @@ $("f-man").onsubmit=async e=>{e.preventDefault();
   }
   add({nome,k,p,h,g,gr:q||undefined,ref:+$("m-r").value});
   if(por){S.quantidades[chaveQuantidade(nome,"g")]=por;save()}
-  e.target.reset();atualizarRefeicaoSelecionada();$("m-off-auth").hidden=true;
+  const lembrarCredenciais=$("m-off-remember").checked;
+  e.target.reset();$("m-off-remember").checked=lembrarCredenciais;atualizarRefeicaoSelecionada();$("m-off-auth").hidden=true;
   $("m-off-status").textContent=contribuir?"Produto guardado neste dispositivo. A enviar contribuição…":"";
   if(produtoOFF){
     try{
       await enviarParaOFF(produtoOFF,produtoOFF.utilizador,produtoOFF.palavraPasse);
       $("m-off-status").textContent="Produto guardado neste dispositivo e enviado para o Open Food Facts.";
+      if(lembrarCredenciais)$("m-off-status").textContent+=" "+await guardarCredenciaisOFF(produtoOFF.utilizador,produtoOFF.palavraPasse);
     }catch(err){
       $("m-off-status").textContent=`Produto guardado neste dispositivo, mas não foi possível enviá-lo para o Open Food Facts: ${err.message}.`;
     }finally{
