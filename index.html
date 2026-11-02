@@ -216,7 +216,7 @@ input.amount-edit{width:82px;padding:6px 8px}
     <button type="button" class="ghost" id="b-peso">Guardar peso de hoje</button>
     <label>Peso-alvo <input type="number" id="peso-alvo" min="20" step="0.1" style="width:90px"> kg</label>
     <select id="ativ" aria-label="Atividade física"><option value="1.2">Sedentário</option><option value="1.375">Pouco ativo (1–3 treinos/semana)</option><option value="1.55">Ativo (3–5 treinos/semana)</option><option value="1.725">Muito ativo (6–7 treinos/semana)</option></select>
-    <label>Ritmo do objetivo <select id="ritmo"><option value="normal">Normal</option><option value="rapido">Mais rápido</option></select></label>
+    <label>Ritmo do objetivo <select id="ritmo"><option value="gradual">Gradual</option><option value="normal">Normal</option><option value="rapido">Rápido</option><option value="agressivo">Agressivo</option></select></label>
   </div>
   <p class="note" id="peso-status" aria-live="polite"></p>
   <p class="note" id="previsao-peso" aria-live="polite"></p>
@@ -284,9 +284,12 @@ document.addEventListener("focusin",e=>{
     campo.setSelectionRange(fim,fim);
   }
 });
+const RITMOS={gradual:{perder:15,ganhar:5},normal:{perder:20,ganhar:10},rapido:{perder:25,ganhar:15},agressivo:{perder:30,ganhar:20}};
+const normalizarRitmo=ritmo=>Object.prototype.hasOwnProperty.call(RITMOS,ritmo)?ritmo:"normal";
 let S={meta:2000,metap:100,peso:"",pesoAlvo:"",produtos:{},perfil:{sexo:"m",idade:"",altura:"",ativ:"1.375",ritmo:"normal"},dias:{},chave:""};
 try{const t=localStorage.getItem("calorias-v1");if(t)S=Object.assign(S,JSON.parse(t))}catch(e){}
 S.perfil={sexo:"m",idade:"",altura:"",ativ:"1.375",ritmo:"normal",...(S.perfil||{})};delete S.perfil.obj;
+S.perfil.ritmo=normalizarRitmo(S.perfil.ritmo);
 S.quantidades=S.quantidades&&typeof S.quantidades=="object"&&!Array.isArray(S.quantidades)?S.quantidades:{};
 function normalizarPesos(pesos){
   return Array.isArray(pesos)?pesos.filter(x=>x&&/^\d{4}-\d{2}-\d{2}$/.test(x.data)&&Number.isFinite(+x.kg)&&+x.kg>0).map(x=>({data:x.data,kg:+x.kg})):[];
@@ -506,9 +509,16 @@ const TPL=[
 const DIV=[.25,.30,.15,.30];
 let PV=[0,0,0,0],PLAN=null,PM=[];
 const sum=(a,f)=>a.reduce((s,o)=>s+f(o),0);
-function caloriasObjetivo(bmr,tdee,objetivo,ritmo){
-  const rapido=ritmo==="rapido";
-  const kcal=objetivo==="perder"?Math.max(tdee*(rapido?0.75:0.8),bmr):objetivo==="ganhar"?tdee*(rapido?1.15:1.1):tdee;
+function caloriasObjetivo(bmr,tdee,objetivo,ritmo,kg){
+  const percentagem=RITMOS[normalizarRitmo(ritmo)];
+  let kcal=tdee;
+  if(objetivo==="perder"){
+    const deficit=Math.min(tdee*percentagem.perder/100,kg*.01*7700/7);
+    kcal=Math.max(tdee-deficit,bmr);
+  }else if(objetivo==="ganhar"){
+    const excedente=Math.min(tdee*percentagem.ganhar/100,kg*.005*7700/7);
+    kcal=tdee+excedente;
+  }
   const arredondado=Math.round(kcal/10)*10;
   return objetivo==="perder"?Math.max(arredondado,Math.ceil(bmr/10)*10):arredondado;
 }
@@ -531,7 +541,7 @@ function previsaoPeso(){
   if(Math.abs(alvo-atual)<.05){el.textContent="O peso atual já corresponde ao peso-alvo.";return}
   if(!(id>0&&alt>0&&ativ>0)){el.textContent="Preencha a idade e a altura para calcular a data estimada.";return}
   const bmr=10*atual+6.25*alt-5*id+(sx=="m"?5:-161),tdee=bmr*ativ;
-  const kcal=caloriasObjetivo(bmr,tdee,ob,$("ritmo").value);
+  const kcal=caloriasObjetivo(bmr,tdee,ob,$("ritmo").value,atual);
   const aPerder=alvo<atual;
   const ritmoDiario=aPerder?tdee-kcal:kcal-tdee;
   if(!(ritmoDiario>0)||!Number.isFinite(ritmoDiario)){el.textContent="O plano atual não prevê uma alteração de peso que permita estimar a data.";return}
@@ -546,7 +556,7 @@ function plano(){
   previsaoPeso();
   if(!(id&&alt&&kg)){el.innerHTML='<p class="empty">Preencha idade, altura e peso atual para ver o plano.</p>';PLAN=null;return}
   const bmr=10*kg+6.25*alt-5*id+(sx=="m"?5:-161),tdee=bmr*(+$("ativ").value);
-  const ritmo=$("ritmo").value,kcal=caloriasObjetivo(bmr,tdee,ob,ritmo);
+  const ritmo=$("ritmo").value,kcal=caloriasObjetivo(bmr,tdee,ob,ritmo,kg);
   const rg=PR[ob],prot=Math.round(kg*rg[2]),gord=Math.round(kcal*.28/9),hid=Math.max(0,Math.round((kcal-prot*4-gord*9)/4));
   const imc=kg/Math.pow(alt/100,2);
   PLAN={kcal,prot};
@@ -556,7 +566,7 @@ function plano(){
   <button id="b-metas" style="margin-left:8px">Usar como metas</button></p>
   <div class="plan">`+PM.map((it,i)=>`<div class="pm"><h3>${REFS[i]} · ${Math.round(sum(it,x=>x.k))} kcal · ${Math.round(sum(it,x=>x.p))} g prot.</h3><p style="margin:0 0 6px"><b>${esc(it.titulo)}</b></p><ul>${it.map(x=>`<li>${esc(x.nome)} ${x.gr} g</li>`).join("")}</ul>
   <button class="ghost" data-var="${i}">Outra sugestão</button> <button data-reg="${i}">Registar</button></div>`).join("")+`</div>
-  <p class="note">Estimativa pela fórmula de Mifflin-St Jeor. ${ob=="perder"?`Défice de cerca de ${ritmo==="rapido"?"25":"20"} %, sem descer abaixo do metabolismo basal. `:ob=="ganhar"?`Excedente de cerca de ${ritmo==="rapido"?"15":"10"} %. `:""}As sugestões alimentares ajustam as porções ao objetivo calórico. As quantidades de proteína seguem o intervalo de 1,4–2,0 g/kg da ISSN para quem faz exercício, com valores mais altos ao perder peso para preservar músculo. Não substitui um nutricionista, e quem tem doença renal, está grávida ou tem outra condição de saúde deve consultar um profissional antes.</p>`;
+  <p class="note">Estimativa pela fórmula de Mifflin-St Jeor. ${ob=="perder"?`Défice selecionado de até ${RITMOS[ritmo].perder} %, sem descer abaixo do metabolismo basal. `:ob=="ganhar"?`Excedente selecionado de até ${RITMOS[ritmo].ganhar} %. `:""}${ob=="perder"||ob=="ganhar"?"O cálculo limita a alteração estimada a cerca de "+(ob=="perder"?"1":"0,5")+" % do peso por semana; o ritmo real varia. ":""}As sugestões alimentares ajustam as porções ao objetivo calórico. As quantidades de proteína seguem o intervalo de 1,4–2,0 g/kg da ISSN para quem faz exercício, com valores mais altos ao perder peso para preservar músculo. Não substitui um nutricionista, e quem tem doença renal, está grávida ou tem outra condição de saúde deve consultar um profissional antes.</p>`;
 }
 $("plano").onclick=e=>{const t=e.target;
   if(t.id=="b-metas"&&PLAN){S.meta=PLAN.kcal;S.metap=PLAN.prot;$("meta").value=S.meta;$("metap").value=S.metap;save();render()}
@@ -841,6 +851,7 @@ $("f-imp").onchange=async e=>{
     if(!confirm(`Importar ${Object.keys(dias).length} dia(s) de registos? Os dados atuais serão substituídos.`))return;
     S={...S,meta:+d.meta||2000,metap:+d.metap||0,peso:d.peso||"",pesoAlvo:d.pesoAlvo||"",pesos:normalizarPesos(d.pesos),perfil:{...S.perfil,...(d.perfil||{})},dias,produtos:(d.produtos&&typeof d.produtos=="object")?d.produtos:{},quantidades:(d.quantidades&&typeof d.quantidades=="object"&&!Array.isArray(d.quantidades))?d.quantidades:S.quantidades};
     delete S.perfil.obj;
+    S.perfil.ritmo=normalizarRitmo(S.perfil.ritmo);
     save();PV=[0,0,0,0];aplicar();plano();render();infoBk();alert("Dados importados.");
   }catch(err){alert("Ficheiro inválido. Escolha uma cópia de segurança exportada por esta aplicação.")}
 };
