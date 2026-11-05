@@ -264,8 +264,112 @@ const LOCAL=[
 ["Sopa de legumes",35,1,5,1.2],["Batata frita",312,3.4,41,15],["Pizza",266,11,33,10],
 ["Bacalhau à Brás",170,11,10,10,300],["Bacalhau com natas",190,10,10,12,300],["Bacalhau com todos",130,12,8,6,400],["Bacalhau assado com batatas",120,12,8,5,400],["Pataniscas de bacalhau",250,10,22,13,100],["Pastéis de bacalhau",230,11,22,11,80],["Arroz de pato",190,10,25,5,300],["Arroz de marisco",120,8,17,2.5,350],["Arroz de tomate",150,3,28,3,150],["Feijoada à portuguesa",130,8,9,7,350],["Cozido à portuguesa",150,13,6,8,450],["Francesinha",270,14,15,17,450],["Caldo verde",45,1.5,5,2,300],["Sopa de feijão",55,2.5,8,1.5,300],["Canja de galinha",40,3,4,1.5,300],["Sardinhas grelhadas",190,25,0,10,150],["Polvo à lagareiro",140,18,4,5,300],["Caldeirada de peixe",90,10,5,3,400],["Dourada grelhada",125,22,0,4,200],["Bifana no pão",250,17,20,11,170],["Prego no pão",260,16,22,12,180],["Tripas à moda do Porto",110,9,9,4,350],["Rojões",230,20,5,14,200],["Carne de porco à alentejana",190,16,5,12,350],["Iscas com elas",170,17,3,10,250],["Pica-pau",200,22,3,11,200],["Cabrito assado",220,27,0,12,200],["Ensopado de borrego",150,12,6,9,350],["Açorda alentejana",100,3,14,3.5,300],["Migas",200,5,20,11,200],["Feijão-frade com atum",120,9,14,3,250],["Salada russa",160,3,10,12,120],["Peixinhos da horta",250,5,25,14,100],["Rissol de camarão",280,8,26,16,70],["Croquete de carne",260,9,22,15,60],["Alheira assada",240,17,10,15,120],["Chouriço assado",330,20,2,27,60],["Presunto",250,30,0,14,40],["Queijo da Serra",380,22,1,32,40],["Queijo fresco",100,11,3,5,100],["Tosta mista",280,14,25,13,150],["Broa de milho",230,5,48,2,60],["Azeitonas",145,1,4,15,30],["Arroz doce",160,3,28,3.5,120],["Leite-creme",160,4,22,6,120],["Pudim flan",165,4.5,25,5,120],["Pão de ló",330,8,50,11,70],["Bolo de arroz",370,6,52,16,70],["Bola de Berlim",340,6,44,15,100],["Queijada de Sintra",320,7,45,12,60],
 ["Pão com chouriço",350,13,42,14,150],["Pão com manteiga",340,8,47,13,70],["Pão com queijo",320,15,40,10,100],["Pão com fiambre",260,14,42,5,100],["Sandes de queijo e fiambre",290,15,34,10,150],["Sandes de atum",230,14,28,7,150],["Sandes de ovo",250,11,30,9,150],["Croissant misto",340,14,35,16,120],["Pão de Deus",350,8,50,13,70],["Empada de galinha",300,9,30,16,100],
-["Pão integral",250,9,45,3.5],["Fiambre de peru",105,17,2,3],["Compota",250,0.4,62,0.1],["Mel",304,0.3,82,0],["Sumo de laranja",45,0.7,10,0.2],["Morangos",32,0.7,8,0.3],["Uvas",69,0.7,18,0.2],["Melancia",30,0.6,8,0.2],["Kiwi",61,1.1,15,0.5],["Pêssego",39,0.9,10,0.3],["Courgette",17,1.2,3,0.3],["Espinafres cozidos",23,3,3.8,0.3],["Grelos cozidos",25,2.5,3,0.4],["Pepino",15,0.7,3.6,0.1],["Ervilhas cozidas",80,5,14,0.4],["Lentilhas cozidas",116,9,20,0.4],["Favas cozidas",110,8,19,0.4],["Pescada cozida",90,19,0,1.5],["Robalo grelhado",125,23,0,3],["Carapau grelhado",150,23,0,6],["Cavala grelhada",205,19,0,14],["Peru grelhado",135,29,0,2],["Coxa de frango assada",200,25,0,11],["Ovo mexido",150,10,1.5,11],["Leite magro",35,3.4,5,0.1],["Iogurte grego",97,9,4,5],["Batata-doce cozida",90,1.6,21,0.1],["Cuscuz cozido",112,3.8,23,0.2],["Manteiga de amendoim",588,25,20,50],["Tofu",76,8,2,4.5],["Tremoços",119,16,10,3]
+["Pão integral",250,9,45,3.5],["Fiambre de peru",105,17,2,3],["Compota",250,0.4,62,0.1],["Mel",304,0.3,82,0],["Sumo de laranja",45,0.7,10,0.2],["Morangos",32,0.7,8,0.3],["Uvas",69,0.7,18,0.2],["Melancia",30,0.6,8,0.2],["Kiwi",61,1.1,15,0.5],["Pêssego",39,0.9,10,0.3],["Courgette",17,1.2,3,0.3],["Espinafres cozidos",23,3,3.8,0.3],["Grelos cozidos",25,2.5,3,0.4],["Pepino",15,0.7,3.6,0.1],["Ervilhas cozidas",80,5,14,0.4],["Lentilhas cozidas",116,9,20,0.4],["Favas cozidas",110,8,19,0.4],["Pescada cozida",90,19,0,1.5],["Robalo grelhado",125,23,0,3],["Carapau grelhado",150,23,0,6],["Cavala grelhada",205,19,0,14],["Peru grelhado",135,29,0,2],["Coxa de frango assada",200,25,0,11],["Ovo mexido",150,10,1.5,11],["Bacon frito",541,37,1.4,42,15],["Ovo estrelado",196,13.6,0.8,15.3,60],["Omelete simples",154,11,1,11,120],["Papo-seco (pão português)",270,9,53,2.5,50],["Pão de mistura",260,9,50,2.5,50],["Pão de centeio",259,8.5,48,3.3,50],["Salsicha",301,12,2,27,60],["Abacate",160,2,9,15,50],["Granola",471,10,64,20,40],["Cereais de pequeno-almoço",357,7,84,0.4,30],["Queijo cottage",98,11,3.4,4.3,100],["Leite magro",35,3.4,5,0.1],["Iogurte grego",97,9,4,5],["Batata-doce cozida",90,1.6,21,0.1],["Cuscuz cozido",112,3.8,23,0.2],["Manteiga de amendoim",588,25,20,50],["Tofu",76,8,2,4.5],["Tremoços",119,16,10,3]
 ].map(a=>({nome:a[0],k:a[1],p:a[2],h:a[3],g:a[4],por:a[5],src:"Local"}));
+LOCAL.push(
+  {nome:"Torrada",k:313,p:10,h:57,g:4.3,por:50,src:"Local"},
+  {nome:"Pão com queijo fresco",k:220,p:12,h:30,g:5,por:120,src:"Local"},
+  {nome:"Pão com fiambre e queijo",k:285,p:16,h:32,g:9,por:120,src:"Local"},
+  {nome:"Papas de aveia",k:95,p:3.5,h:14,g:2.5,por:250,src:"Local"},
+  {nome:"Cereais com leite",k:105,p:4.5,h:17,g:2,por:250,src:"Local"},
+  {nome:"Iogurte sólido",k:61,p:3.5,h:4.7,g:3.3,por:125,src:"Local"},
+  {nome:"Iogurte líquido",k:75,p:3,h:12,g:1.5,por:170,src:"Local"},
+  {nome:"Galão",k:40,p:2,h:4,g:1.5,por:200,src:"Local"},
+  {nome:"Café com leite",k:35,p:2,h:3,g:1.5,por:150,src:"Local"},
+  {nome:"Meia de leite",k:40,p:2.5,h:4,g:1.5,por:150,src:"Local"},
+  {nome:"Croissant simples",k:406,p:8,h:46,g:21,por:60,src:"Local"},
+  {nome:"Sandes de courato",k:310,p:12,h:34,g:14,por:150,src:"Local"},
+  {nome:"Sandes de panado",k:270,p:16,h:28,g:10,por:180,src:"Local"},
+  {nome:"Sopa de grão",k:65,p:3.5,h:9,g:1.5,por:300,src:"Local"},
+  {nome:"Sopa de abóbora",k:35,p:1,h:6,g:0.8,por:300,src:"Local"},
+  {nome:"Sopa de peixe",k:55,p:5,h:6,g:1.5,por:300,src:"Local"},
+  {nome:"Creme de cenoura",k:45,p:1,h:7,g:1.5,por:300,src:"Local"},
+  {nome:"Sopa da pedra",k:95,p:6,h:9,g:4,por:350,src:"Local"},
+  {nome:"Bife com batatas fritas e ovo a cavalo",k:230,p:14,h:14,g:13,por:400,src:"Local"},
+  {nome:"Frango assado de churrasco",k:215,p:27,h:0,g:12,por:180,src:"Local"},
+  {nome:"Frango de churrasco com piri-piri",k:215,p:27,h:0,g:12,por:180,src:"Local"},
+  {nome:"Bitoque",k:190,p:13,h:13,g:9,por:400,src:"Local"},
+  {nome:"Febras grelhadas",k:190,p:28,h:0,g:8,por:150,src:"Local"},
+  {nome:"Costeleta de porco",k:260,p:25,h:0,g:18,por:180,src:"Local"},
+  {nome:"Feijoada à transmontana",k:160,p:10,h:10,g:9,por:350,src:"Local"},
+  {nome:"Alheira com ovo e batata frita",k:250,p:13,h:15,g:15,por:350,src:"Local"},
+  {nome:"Salsichas grelhadas",k:301,p:12,h:2,g:27,por:120,src:"Local"},
+  {nome:"Entrecosto grelhado",k:291,p:25,h:0,g:21,por:180,src:"Local"},
+  {nome:"Hambúrguer à portuguesa com ovo",k:230,p:15,h:13,g:13,por:300,src:"Local"},
+  {nome:"Rissol de carne",k:270,p:9,h:25,g:15,por:70,src:"Local"},
+  {nome:"Pastel de massa tenra",k:290,p:9,h:29,g:15,por:80,src:"Local"},
+  {nome:"Bacalhau à Gomes de Sá",k:155,p:11,h:14,g:6,por:350,src:"Local"},
+  {nome:"Bacalhau cozido com grão e batatas",k:130,p:12,h:15,g:2.5,por:400,src:"Local"},
+  {nome:"Bolinhos de bacalhau",k:230,p:11,h:22,g:11,por:80,src:"Local"},
+  {nome:"Pastel de bacalhau",k:230,p:11,h:22,g:11,por:80,src:"Local"},
+  {nome:"Sardinhas assadas",k:190,p:25,h:0,g:10,por:150,src:"Local"},
+  {nome:"Carapau frito",k:220,p:22,h:7,g:12,por:150,src:"Local"},
+  {nome:"Arroz de tamboril",k:130,p:9,h:18,g:2.5,por:350,src:"Local"},
+  {nome:"Cataplana de marisco",k:110,p:10,h:8,g:4,por:400,src:"Local"},
+  {nome:"Lulas grelhadas",k:125,p:19,h:3,g:3,por:180,src:"Local"},
+  {nome:"Lulas à sevilhana",k:240,p:15,h:20,g:11,por:150,src:"Local"},
+  {nome:"Camarão cozido",k:99,p:24,h:0.2,g:0.3,por:150,src:"Local"},
+  {nome:"Camarão à Guilherme",k:180,p:20,h:2,g:10,por:180,src:"Local"},
+  {nome:"Amêijoas à Bulhão Pato",k:95,p:12,h:3,g:3,por:200,src:"Local"},
+  {nome:"Percebes",k:66,p:13,h:1,g:0.5,por:100,src:"Local"},
+  {nome:"Atum em lata",k:190,p:25,h:0,g:10,por:80,src:"Local"},
+  {nome:"Arroz branco",k:130,p:2.7,h:28,g:0.3,por:150,src:"Local"},
+  {nome:"Massa cotovelinho cozida",k:158,p:5.8,h:31,g:0.9,por:150,src:"Local"},
+  {nome:"Arroz de feijão",k:145,p:5,h:26,g:2,por:180,src:"Local"},
+  {nome:"Puré de batata",k:110,p:2,h:17,g:3.5,por:180,src:"Local"},
+  {nome:"Legumes salteados",k:75,p:3,h:8,g:4,por:150,src:"Local"},
+  {nome:"Salada de tomate e cebola",k:25,p:1,h:5,g:0.3,por:150,src:"Local"},
+  {nome:"Salada de alface",k:20,p:1,h:3,g:0.5,por:100,src:"Local"},
+  {nome:"Couve portuguesa cozida",k:30,p:2,h:5,g:0.5,por:120,src:"Local"},
+  {nome:"Esparguete à bolonhesa",k:165,p:9,h:20,g:5,por:350,src:"Local"},
+  {nome:"Massa com atum",k:160,p:10,h:21,g:4,por:300,src:"Local"},
+  {nome:"Massa com salsichas",k:175,p:7,h:22,g:6,por:300,src:"Local"},
+  {nome:"Arroz de cenoura",k:135,p:3,h:27,g:2,por:180,src:"Local"},
+  {nome:"Arroz de frango",k:165,p:10,h:22,g:4,por:350,src:"Local"},
+  {nome:"Arroz de cabidela",k:175,p:12,h:23,g:4,por:350,src:"Local"},
+  {nome:"Lasanha",k:160,p:9,h:15,g:7,por:300,src:"Local"},
+  {nome:"Tosta de frango",k:260,p:18,h:28,g:8,por:180,src:"Local"},
+  {nome:"Chamuça",k:280,p:8,h:27,g:16,por:80,src:"Local"},
+  {nome:"Sandes de leitão",k:260,p:17,h:30,g:8,por:180,src:"Local"},
+  {nome:"Queijo de cabra",k:364,p:22,h:2,g:30,por:30,src:"Local"},
+  {nome:"Linguiça",k:320,p:18,h:2,g:27,por:50,src:"Local"},
+  {nome:"Morcela",k:300,p:14,h:4,g:25,por:60,src:"Local"},
+  {nome:"Paio",k:330,p:24,h:1,g:26,por:40,src:"Local"},
+  {nome:"Farinheira",k:340,p:12,h:8,g:28,por:60,src:"Local"},
+  {nome:"Pudim de ovos",k:185,p:5,h:30,g:5,por:120,src:"Local"},
+  {nome:"Mousse de chocolate",k:300,p:5,h:25,g:21,por:100,src:"Local"},
+  {nome:"Salame de chocolate",k:470,p:6,h:48,g:29,por:60,src:"Local"},
+  {nome:"Bolo de bolacha",k:390,p:5,h:45,g:21,por:80,src:"Local"},
+  {nome:"Molotof",k:145,p:4,h:30,g:1,por:100,src:"Local"},
+  {nome:"Toucinho do céu",k:390,p:8,h:48,g:19,por:80,src:"Local"},
+  {nome:"Pastel de Tentúgal",k:390,p:6,h:48,g:19,por:80,src:"Local"},
+  {nome:"Sericaia",k:190,p:5,h:31,g:5,por:120,src:"Local"},
+  {nome:"Aletria",k:155,p:4,h:27,g:3,por:120,src:"Local"},
+  {nome:"Tarte de amêndoa",k:440,p:8,h:45,g:26,por:80,src:"Local"},
+  {nome:"Bolo de laranja",k:350,p:6,h:50,g:13,por:80,src:"Local"},
+  {nome:"Bolo de cenoura",k:370,p:5,h:52,g:16,por:80,src:"Local"},
+  {nome:"Rabanadas",k:290,p:7,h:39,g:12,por:80,src:"Local"},
+  {nome:"Bolo-rei",k:360,p:7,h:52,g:13,por:80,src:"Local"},
+  {nome:"Figos",k:74,p:0.8,h:19,g:0.3,por:100,src:"Local"},
+  {nome:"Melão",k:34,p:0.8,h:8,g:0.2,por:150,src:"Local"},
+  {nome:"Pera rocha",k:57,p:0.4,h:15,g:0.1,por:160,src:"Local"},
+  {nome:"Café (bica)",k:2,p:0.1,h:0,g:0,por:30,src:"Local"},
+  {nome:"Café bica",k:2,p:0.1,h:0,g:0,por:30,src:"Local"},
+  {nome:"Garoto",k:30,p:1.5,h:3,g:1,por:80,src:"Local"},
+  {nome:"Pingo",k:30,p:1.5,h:3,g:1,por:80,src:"Local"},
+  {nome:"Vinho branco",k:82,p:0.1,h:2.6,g:0,por:150,src:"Local"},
+  {nome:"Vinho verde",k:75,p:0.1,h:2,g:0,por:150,src:"Local"},
+  {nome:"Imperial / fino",k:43,p:0.5,h:3.6,g:0,por:200,src:"Local"},
+  {nome:"Sumo de laranja natural",k:45,p:0.7,h:10,g:0.2,por:200,src:"Local"},
+  {nome:"Ginjinha",k:250,p:0,h:30,g:0,por:50,src:"Local"},
+  {nome:"Água com gás",k:0,p:0,h:0,g:0,por:250,src:"Local"},
+  {nome:"Sumol",k:45,p:0,h:11,g:0,por:330,src:"Local"},
+  {nome:"Compal",k:45,p:0.5,h:10,g:0.1,por:200,src:"Local"},
+  {nome:"Ice tea",k:30,p:0,h:7.5,g:0,por:330,src:"Local"},
+  {nome:"Cola",k:42,p:0,h:10.6,g:0,por:330,src:"Local"},
+  {nome:"Licor Beirão",k:300,p:0,h:30,g:0,por:50,src:"Local"},
+  {nome:"Vinho do Porto",k:165,p:0.1,h:12,g:0,por:75,src:"Local"}
+);
 LOCAL.push(
   {nome:"Arroz de lampreia",k:1249.79,p:45.20,h:51.93,g:92.16,por:1,base:"dose",src:"Estudo 2015"},
   {nome:"Bacalhau com batata à murro",k:2135.38,p:78.43,h:71.63,g:168.24,por:1,base:"dose",src:"Estudo 2015"},
@@ -314,6 +418,12 @@ function atualizarRefeicaoSelecionada(){
 atualizarRefeicaoSelecionada();
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 const norm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+function correspondeBusca(nome,consulta){
+  const limpar=s=>norm(s).replace(/[^a-z0-9]+/g," ").trim();
+  const n=limpar(nome),q=limpar(consulta);
+  if(n.includes(q))return true;
+  return q.split(/\s+/).filter(Boolean).map(t=>t.length>3&&t.endsWith("s")?t.slice(0,-1):t).every(t=>n.includes(t));
+}
 function objetivoPeso(){
   const atual=+$("peso").value,alvo=+$("peso-alvo").value;
   if(!(atual>0&&alvo>0)||Math.abs(alvo-atual)<.05)return"manter";
@@ -742,7 +852,7 @@ $("f-pesq").onsubmit=async e=>{
   e.preventDefault();const q=$("q").value.trim();if(!q)return;
   $("res").innerHTML='<p class="empty">A pesquisar…</p>';
   let out=[],falhas=[];
-  if($("s-loc").checked){const n=norm(q);out.push(...Object.values(S.produtos||{}).filter(a=>norm(a.nome).includes(n)).map(a=>({...a,src:"Os meus produtos"})),...LOCAL.filter(a=>norm(a.nome).includes(n)))}
+  if($("s-loc").checked){out.push(...Object.values(S.produtos||{}).filter(a=>correspondeBusca(a.nome,q)).map(a=>({...a,src:"Os meus produtos"})),...LOCAL.filter(a=>correspondeBusca(a.nome,q)))}
   const tarefas=[];
   if($("s-off").checked)tarefas.push(["Open Food Facts",pOFF]);
   if($("s-usda").checked)tarefas.push(["USDA",pUSDA]);
