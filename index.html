@@ -322,7 +322,19 @@ function objetivoPeso(){
 const chaveQuantidade=(nome,unidade)=>`${norm(nome)}|${unidade}`;
 function quantidadeUsual(nome,unidade,por){
   const q=+S.quantidades[chaveQuantidade(nome,unidade)];
-  return Number.isFinite(q)&&q>0?q:por;
+  if(Number.isFinite(q)&&q>0)return q;
+  const nomeNormalizado=norm(nome);
+  for(const data of Object.keys(S.dias||{}).sort().reverse()){
+    const itens=S.dias[data];
+    if(!Array.isArray(itens))continue;
+    for(let i=itens.length-1;i>=0;i--){
+      const item=itens[i];
+      if(!item||typeof item.nome!=="string"||norm(item.nome)!==nomeNormalizado||(item.unidade||"g")!==unidade)continue;
+      const quantidade=+(item.unidade?item.quantidade:item.gr);
+      if(Number.isFinite(quantidade)&&quantidade>0)return quantidade;
+    }
+  }
+  return por;
 }
 function ativarSeparador(tab){
   document.querySelectorAll("#tabs [role=tab]").forEach(t=>{
