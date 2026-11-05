@@ -32,4 +32,4 @@ Conteúdo
   Incremente VERSAO em sw.js quando alterar outros ficheiros em cache ou o próprio comportamento da cache; depois volte a enviar os ficheiros.
   Se continuar a ver a versão antiga, feche e volte a abrir a aplicação. A instalação no ecrã principal não deve ser removida.
 
-Nota: as pesquisas no Open Food Facts e no USDA precisam de internet. A leitura de códigos consulta primeiro o catálogo português do Open Food Facts e depois o catálogo global.
+Nota: a app inclui 7 839 registos com calorias e macronutrientes da USDA FoodData Central, extraídos das tabelas Foundation e SR Legacy do conjunto CSV disponibilizado em 2026-10-29; a grande tabela branded_food não foi incluída. Estes dados podem ser pesquisados offline e não são específicos de alimentos ou receitas portuguesas. As pesquisas online na API USDA e no Open Food Facts precisam de internet. A leitura de códigos consulta primeiro o catálogo português do Open Food Facts e depois o catálogo global.
