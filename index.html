@@ -154,9 +154,9 @@ input.amount-edit{width:82px;padding:6px 8px}
     <button type="button" class="ghost" id="b-scan">Ler código de barras</button>
   </form>
   <div class="row note" style="margin-top:8px">
-    <label><input type="checkbox" id="s-loc" checked disabled> Tabela local + USDA offline</label>
-    <label><input type="checkbox" id="s-off" checked disabled> Open Food Facts</label>
-    <label><input type="checkbox" id="s-usda" checked disabled> USDA</label>
+    <label><input type="checkbox" id="s-loc" checked> Tabela local + USDA offline</label>
+    <label><input type="checkbox" id="s-off" checked> Open Food Facts</label>
+    <label><input type="checkbox" id="s-usda" checked> USDA</label>
   </div>
   <div id="sel">
     <b id="sel-nome"></b> <span class="note" id="sel-info"></span>
@@ -203,7 +203,6 @@ input.amount-edit{width:82px;padding:6px 8px}
     <div class="row"><input id="chave" placeholder="Chave API (por omissão DEMO_KEY)" style="flex:1"></div>
     <p class="note">A DEMO_KEY tem limites baixos. Pode pedir uma chave gratuita em fdc.nal.usda.gov.</p>
   </details>
-  <p class="note">Os valores indicam quantidades por 100 g, exceto os pratos identificados como “Estudo 2015”, que são por dose completa. A pesquisa local inclui alimentos aproximados e dados genéricos da USDA FoodData Central; estes últimos aparecem identificados nos resultados e não representam especificamente produtos ou receitas portuguesas. As pesquisas online no Open Food Facts e na API USDA precisam de internet.</p>
 </section>
 </div>
 <div class="tab-panel" id="painel-plano" role="tabpanel" aria-labelledby="tab-plano" tabindex="0" hidden>
@@ -853,8 +852,10 @@ $("f-pesq").onsubmit=async e=>{
   e.preventDefault();const q=$("q").value.trim();if(!q)return;
   $("res").innerHTML='<p class="empty">A pesquisar…</p>';
   let out=[],falhas=[];
-  out.push(...Object.values(S.produtos||{}).filter(a=>correspondeBusca(a.nome,q)).map(a=>({...a,src:"Os meus produtos"})),...LOCAL.filter(a=>correspondeBusca(a.nome,q)),...USDA_FOODS.filter(a=>correspondeBusca(a.nome,q)));
-  const tarefas=[["Open Food Facts",pOFF],["USDA",pUSDA]];
+  if($("s-loc").checked)out.push(...Object.values(S.produtos||{}).filter(a=>correspondeBusca(a.nome,q)).map(a=>({...a,src:"Os meus produtos"})),...LOCAL.filter(a=>correspondeBusca(a.nome,q)),...USDA_FOODS.filter(a=>correspondeBusca(a.nome,q)));
+  const tarefas=[];
+  if($("s-off").checked)tarefas.push(["Open Food Facts",pOFF]);
+  if($("s-usda").checked)tarefas.push(["USDA",pUSDA]);
   await Promise.all(tarefas.map(async([n,f])=>{try{out.push(...await f(q))}catch(err){falhas.push(n)}}));
   mostrar(out,falhas.length?`Não foi possível consultar: ${falhas.join(", ")}. Verifique a ligação à internet e abra a página a partir do ficheiro descarregado.`:"");
 };
