@@ -267,6 +267,12 @@ const LOCAL=[
 ["Pão integral",250,9,45,3.5],["Fiambre de peru",105,17,2,3],["Compota",250,0.4,62,0.1],["Mel",304,0.3,82,0],["Sumo de laranja",45,0.7,10,0.2],["Morangos",32,0.7,8,0.3],["Uvas",69,0.7,18,0.2],["Melancia",30,0.6,8,0.2],["Kiwi",61,1.1,15,0.5],["Pêssego",39,0.9,10,0.3],["Courgette",17,1.2,3,0.3],["Espinafres cozidos",23,3,3.8,0.3],["Grelos cozidos",25,2.5,3,0.4],["Pepino",15,0.7,3.6,0.1],["Ervilhas cozidas",80,5,14,0.4],["Lentilhas cozidas",116,9,20,0.4],["Favas cozidas",110,8,19,0.4],["Pescada cozida",90,19,0,1.5],["Robalo grelhado",125,23,0,3],["Carapau grelhado",150,23,0,6],["Cavala grelhada",205,19,0,14],["Peru grelhado",135,29,0,2],["Coxa de frango assada",200,25,0,11],["Ovo mexido",150,10,1.5,11],["Bacon frito",541,37,1.4,42,15],["Ovo estrelado",196,13.6,0.8,15.3,60],["Omelete simples",154,11,1,11,120],["Papo-seco (pão português)",270,9,53,2.5,50],["Pão de mistura",260,9,50,2.5,50],["Pão de centeio",259,8.5,48,3.3,50],["Salsicha",301,12,2,27,60],["Abacate",160,2,9,15,50],["Granola",471,10,64,20,40],["Cereais de pequeno-almoço",357,7,84,0.4,30],["Queijo cottage",98,11,3.4,4.3,100],["Leite magro",35,3.4,5,0.1],["Iogurte grego",97,9,4,5],["Batata-doce cozida",90,1.6,21,0.1],["Cuscuz cozido",112,3.8,23,0.2],["Manteiga de amendoim",588,25,20,50],["Tofu",76,8,2,4.5],["Tremoços",119,16,10,3]
 ].map(a=>({nome:a[0],k:a[1],p:a[2],h:a[3],g:a[4],por:a[5],src:"Local"}));
 LOCAL.push(
+  {nome:"Carne picada de vaca",k:198,p:19.42,h:0,g:12.73,por:100,src:"Local"},
+  {nome:"Carne picada de porco",k:263,p:16.88,h:0,g:21.19,por:100,src:"Local"},
+  {nome:"Carne picada mista (vaca e porco)",k:230,p:18,h:0,g:17,por:100,src:"Local"},
+  {nome:"Carne picada de frango",k:143,p:17.44,h:0.04,g:8.1,por:100,src:"Local"},
+  {nome:"Carne picada de peru",k:148,p:19.66,h:0,g:7.66,por:100,src:"Local"},
+  {nome:"Carne picada de borrego",k:282,p:16.6,h:0,g:23.4,por:100,src:"Local"},
   {nome:"Torrada",k:313,p:10,h:57,g:4.3,por:50,src:"Local"},
   {nome:"Pão com queijo fresco",k:220,p:12,h:30,g:5,por:120,src:"Local"},
   {nome:"Pão com fiambre e queijo",k:285,p:16,h:32,g:9,por:120,src:"Local"},
@@ -419,11 +425,80 @@ function atualizarRefeicaoSelecionada(){
 atualizarRefeicaoSelecionada();
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 const norm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const GRUPOS_TRADUCAO=[
+  ["minced","mince","picada","picado","picadas","picados"],
+  ["meat","carne","carnes"],["beef","vaca","bovino","bovina","steak","bife"],
+  ["pork","porco","suino","suina"],["chicken","frango","galinha"],
+  ["turkey","peru"],["lamb","borrego","cordeiro"],["fish","peixe","pescado"],
+  ["cod","bacalhau"],["salmon","salmao"],["tuna","atum"],["shrimp","prawn","prawns","camarao"],
+  ["octopus","polvo"],["rice","arroz"],["potato","batata","batatas"],
+  ["pasta","massa"],["bread","pao"],["beans","feijao"],
+  ["chickpea","chickpeas","grao de bico"],["lentil","lentils","lentilha","lentilhas"],
+  ["milk","leite"],["yogurt","yoghurt","iogurte"],["cheese","queijo"],
+  ["egg","eggs","ovo","ovos"],["apple","apples","maca"],["banana","bananas"],
+  ["orange","oranges","laranja"],["pear","pears","pera"],["tomato","tomatoes","tomate"],
+  ["lettuce","alface"],["carrot","cenoura"],["broccoli","brocolos"],
+  ["kale","couve galega"],["olive oil","azeite"],["butter","manteiga"],
+  ["sugar","acucar"],["oat","oats","aveia"],["beer","cerveja"],["wine","vinho"],
+  ["coffee","cafe"],["soup","sopa"],["fries","french fries","batata frita","batatas fritas"],
+  ["almond","almonds","amendoa","amendoas"],["walnut","walnuts","noz","nozes"],
+  ["peanut butter","manteiga de amendoim"],["avocado","abacate"],
+  ["cucumber","pepino"],["spinach","espinafre","espinafres"],["pea","peas","ervilha","ervilhas"],
+  ["fava","fava beans","favas"],["hake","pescada"],["seabass","sea bass","robalo"],
+  ["mackerel","cavala"],["sardine","sardines","sardinha","sardinhas"],
+  ["pork loin","lombo de porco"],["olive","olives","azeitona","azeitonas"],
+  ["ham","fiambre","presunto"],["sausage","sausages","salsicha","salsichas"],
+  ["chorizo","chourico"],["tangerine","clementine","tangerina","clementina"],
+  ["strawberry","strawberries","morango","morangos"],["grape","grapes","uva","uvas"],
+  ["watermelon","melancia"],["kiwi","kiwis"],["peach","peaches","pessego","pessegos"],
+  ["zucchini","courgette","courgettes"],["cabbage","couve"],["cereal","cereals","cereais"],
+  ["honey","mel"],["jam","compota"],["yolk","gema"],["squid","lula","lulas"],
+  ["pork chop","costeleta de porco"],["garlic","alho"],["onion","cebola"],
+  ["lemon","limao"],["flour","farinha"],["salt","sal"],["pepper","pimenta"],
+  ["sweet potato","batata doce"],["couscous","cuscuz"],["peanut","amendoim"],
+  ["mushroom","mushrooms","cogumelo","cogumelos"],["cauliflower","couve flor"],
+  ["green beans","feijao verde"],["coconut","coco"],["chocolate"],
+  ["ice cream","gelado"],["cake","bolo"],["cookie","cookies","bolacha","bolachas"],
+  ["parsley","salsa"],["cooked","boiled","cozido","cozida","cozidos","cozidas"],
+  ["grilled","grelhado","grelhada","grelhados","grelhadas"],
+  ["fried","frito","frita","fritos","fritas"],["roasted","assado","assada","assados","assadas"],
+  ["raw","cru","crua"],["fresh","fresco","fresca"]
+];
+const equivalentesBusca=new Map();
+for(const grupo of GRUPOS_TRADUCAO){
+  const canon=grupo[0];
+  for(const termo of grupo)equivalentesBusca.set(norm(termo),canon);
+}
+const termosTraduzidos=[...equivalentesBusca.keys()].sort((a,b)=>b.length-a.length);
+function normalizarTermos(s){
+  let texto=norm(s).replace(/[^a-z0-9]+/g," ").trim();
+  for(const termo of termosTraduzidos){
+    if(termo===equivalentesBusca.get(termo))continue;
+    const escapado=termo.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/\s+/g,"\\s+");
+    texto=texto.replace(new RegExp(`(^|\\s)${escapado}(?=\\s|$)`,"g"),(_,antes)=>antes+equivalentesBusca.get(termo));
+  }
+  const palavras=texto.split(/\s+/);
+  if(palavras.includes("ground")&&palavras.some(t=>["meat","beef","pork","chicken","turkey","lamb"].includes(t))){
+    texto=palavras.map(t=>t==="ground"?"minced":t).join(" ");
+  }
+  return texto;
+}
 function correspondeBusca(nome,consulta){
-  const limpar=s=>norm(s).replace(/[^a-z0-9]+/g," ").trim();
-  const n=limpar(nome),q=limpar(consulta);
+  const n=normalizarTermos(nome),q=normalizarTermos(consulta);
   if(n.includes(q))return true;
-  return q.split(/\s+/).filter(Boolean).map(t=>t.length>3&&t.endsWith("s")?t.slice(0,-1):t).every(t=>n.includes(t));
+  const parar=new Set(["a","an","and","de","da","das","do","dos","the"]);
+  const singular=t=>t.length>3&&t.endsWith("s")?t.slice(0,-1):t;
+  const tokens=q.split(/\s+/).filter(t=>t&&!parar.has(t)).map(singular);
+  if(tokens.includes("minced")||tokens.some(t=>["beef","pork","chicken","turkey","lamb"].includes(t))){
+    const i=tokens.indexOf("meat");
+    if(i!==-1)tokens.splice(i,1);
+  }
+  if(!tokens.length)return false;
+  const disponiveis=new Set(n.split(/\s+/).map(singular));
+  return tokens.every(t=>{
+    if(t==="meat")return ["beef","pork","chicken","turkey","lamb"].some(c=>disponiveis.has(c))||disponiveis.has(t);
+    return disponiveis.has(t)||n.includes(t);
+  });
 }
 function objetivoPeso(){
   const atual=+$("peso").value,alvo=+$("peso-alvo").value;
