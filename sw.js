@@ -1,6 +1,6 @@
 // Service worker: guarda a aplicação para funcionar sem internet.
 // Navegações verificam a rede primeiro; a cache serve de alternativa offline.
-const VERSAO = "joule-v3";
+const VERSAO = "joule-v4";
 const FICHEIROS = ["./", "index.html", "usda-foods.js", "manifest.webmanifest", "zxing.min.js", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
